@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { PencilLine, Search, Trash2, Users } from 'lucide-react'
+import { KeyRound, PencilLine, Search, Trash2, Users } from 'lucide-react'
 import { useMemo, useState, type FormEvent } from 'react'
 import { toast } from 'sonner'
 import { useStudentRegistry } from '../../context/useStudentRegistry'
@@ -12,10 +12,17 @@ const TEAL = '#00BFA5'
 const TEAL_HOVER = '#00a693'
 
 export default function AdminRegisteredStudents() {
-  const { students, updateStudent, deleteStudent } = useStudentRegistry()
+  const { students, updateStudent, deleteStudent, resetStudentPassword } =
+    useStudentRegistry()
   const [classFilter, setClassFilter] = useState<string>('all')
   const [query, setQuery] = useState('')
   const [editing, setEditing] = useState<RegisteredStudent | null>(null)
+  const [passwordReset, setPasswordReset] = useState<RegisteredStudent | null>(
+    null,
+  )
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [resetting, setResetting] = useState(false)
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -71,6 +78,47 @@ export default function AdminRegisteredStudents() {
     updateStudent(editing.id, { fullName, email, classGroup, status })
     setEditing(null)
     toast.success('Мэдээлэл шинэчлэгдлээ')
+  }
+
+  function openPasswordReset(row: RegisteredStudent) {
+    setPasswordReset(row)
+    setNewPassword('')
+    setConfirmPassword('')
+  }
+
+  function closePasswordReset() {
+    setPasswordReset(null)
+    setNewPassword('')
+    setConfirmPassword('')
+  }
+
+  async function handlePasswordReset(e: FormEvent) {
+    e.preventDefault()
+    if (!passwordReset) return
+    const pwd = newPassword.trim()
+    const confirm = confirmPassword.trim()
+    if (pwd.length < 6) {
+      toast.error('Нууц үг дор хаяж 6 тэмдэгт байх ёстой')
+      return
+    }
+    if (pwd !== confirm) {
+      toast.error('Нууц үг таарахгүй байна')
+      return
+    }
+    setResetting(true)
+    try {
+      await resetStudentPassword(passwordReset.id, pwd)
+      toast.success('Нууц үг сэргээгдлээ', {
+        description: `${passwordReset.fullName} — шинэ нууц үгийг сурагчид өгнө үү. Бүртгэл, асуулт зэрэг бүх мэдээлэл хадгалагдана.`,
+      })
+      closePasswordReset()
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : 'Нууц үг сэргээхэд алдаа гарлаа',
+      )
+    } finally {
+      setResetting(false)
+    }
   }
 
   return (
@@ -217,6 +265,74 @@ export default function AdminRegisteredStudents() {
         )}
       </AnimatePresence>
 
+      <AnimatePresence>
+        {passwordReset && (
+          <motion.form
+            key={`pwd-${passwordReset.id}`}
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            onSubmit={handlePasswordReset}
+            className="mb-5 overflow-hidden rounded-2xl border border-amber-400/40 bg-amber-500/10 p-4 dark:bg-amber-500/10"
+          >
+            <p className="mb-1 text-sm font-semibold text-slate-900 dark:text-white">
+              Нууц үг сэргээх — {passwordReset.fullName}
+            </p>
+            <p className="mb-3 text-xs text-slate-600 dark:text-orange-50/65">
+              Зөвхөн нэвтрэх нууц үг солигдоно. И-мэйл, анги, эмчийн асуулт болон
+              бусад бүртгэл устахгүй.
+            </p>
+            <motion.div className="grid gap-3 sm:grid-cols-2">
+              <label className="block text-left">
+                <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                  Шинэ нууц үг
+                </span>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  autoComplete="new-password"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-black/35 dark:text-white"
+                />
+              </label>
+              <label className="block text-left">
+                <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                  Давтах
+                </span>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  autoComplete="new-password"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-black/35 dark:text-white"
+                />
+              </label>
+            </motion.div>
+            <motion.div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="submit"
+                disabled={resetting}
+                style={{ backgroundColor: TEAL }}
+                className="rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:opacity-95 disabled:opacity-60"
+              >
+                {resetting ? 'Хадгалж байна…' : 'Нууц үг сэргээх'}
+              </button>
+              <button
+                type="button"
+                onClick={closePasswordReset}
+                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800 dark:border-white/15 dark:bg-black/35 dark:text-white"
+              >
+                Цуцлах
+              </button>
+            </motion.div>
+          </motion.form>
+        )}
+      </AnimatePresence>
+
       <div className="overflow-x-auto rounded-2xl border border-slate-200/80 dark:border-white/10">
         <table className="min-w-full text-left text-sm">
           <thead className="border-b border-slate-200/90 bg-slate-50/95 text-xs uppercase tracking-wide text-slate-500 dark:border-white/10 dark:bg-black/40 dark:text-orange-50/55">
@@ -261,7 +377,16 @@ export default function AdminRegisteredStudents() {
                   </span>
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <div className="inline-flex gap-1">
+                  <motion.div className="inline-flex gap-1">
+                    <button
+                      type="button"
+                      onClick={() => openPasswordReset(row)}
+                      className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-amber-800 shadow-sm hover:bg-amber-100 dark:border-amber-500/35 dark:bg-amber-950/40 dark:text-amber-200 dark:hover:bg-amber-950/55"
+                      aria-label="Нууц үг сэргээх"
+                      title="Нууц үг сэргээх"
+                    >
+                      <KeyRound className="size-4" />
+                    </button>
                     <button
                       type="button"
                       onClick={() => setEditing(row)}
@@ -278,7 +403,7 @@ export default function AdminRegisteredStudents() {
                     >
                       <Trash2 className="size-4" />
                     </button>
-                  </div>
+                  </motion.div>
                 </td>
               </tr>
             ))}

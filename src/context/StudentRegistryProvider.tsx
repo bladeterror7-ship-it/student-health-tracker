@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react
 import {
   deleteStudentFromNeon,
   fetchStudentsFromApi,
+  resetStudentPasswordInNeon,
   STUDENT_REGISTRY_EVENT,
   updateStudentInNeon,
 } from '../lib/neonStudents'
@@ -99,6 +100,13 @@ export function StudentRegistryProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
+  const resetStudentPassword = useCallback(
+    async (id: string, newPassword: string) => {
+      await resetStudentPasswordInNeon(id, newPassword)
+    },
+    [],
+  )
+
   const value = useMemo(
     () => ({
       students,
@@ -107,6 +115,7 @@ export function StudentRegistryProvider({ children }: { children: ReactNode }) {
       authenticateStudent,
       updateStudent,
       deleteStudent,
+      resetStudentPassword,
     }),
     [
       students,
@@ -115,6 +124,7 @@ export function StudentRegistryProvider({ children }: { children: ReactNode }) {
       authenticateStudent,
       updateStudent,
       deleteStudent,
+      resetStudentPassword,
     ],
   )
 

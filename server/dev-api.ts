@@ -20,8 +20,10 @@ import {
   listStudents,
   loginStudent,
   registerStudent,
+  resetStudentPassword,
   updateStudent,
 } from '../api/_lib/students.js'
+import { resetPortalPassword } from '../api/_lib/portal.js'
 
 const app = express()
 const PORT = Number(process.env.API_PORT) || 3001
@@ -139,6 +141,42 @@ app.post('/api/register-admin', async (req, res) => {
     }
     res.status(201).json({ ok: true, account: result.account })
   } catch (error) {
+    res.status(500).json({
+      ok: false,
+      reason: error instanceof Error ? error.message : 'Server error',
+    })
+  }
+})
+
+app.post('/api/reset-student-password', async (req, res) => {
+  try {
+    const { id, newPassword } = req.body as { id?: string; newPassword?: string }
+    if (!id || !newPassword) {
+      res.status(400).json({ ok: false, reason: 'id болон newPassword шаардлагатай' })
+      return
+    }
+    await resetStudentPassword(id, newPassword)
+    res.json({ ok: true })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({
+      ok: false,
+      reason: error instanceof Error ? error.message : 'Server error',
+    })
+  }
+})
+
+app.post('/api/reset-portal-password', async (req, res) => {
+  try {
+    const { id, newPassword } = req.body as { id?: string; newPassword?: string }
+    if (!id || !newPassword) {
+      res.status(400).json({ ok: false, reason: 'id болон newPassword шаардлагатай' })
+      return
+    }
+    await resetPortalPassword(id, newPassword)
+    res.json({ ok: true })
+  } catch (error) {
+    console.error(error)
     res.status(500).json({
       ok: false,
       reason: error instanceof Error ? error.message : 'Server error',

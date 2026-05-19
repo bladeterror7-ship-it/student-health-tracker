@@ -516,6 +516,12 @@ export default function LoginPage() {
                             autoComplete="current-password"
                           />
                         </span>
+                        {loginRole === 'student' && !staffOpen && (
+                          <p className="text-[11px] leading-relaxed text-emerald-50/70">
+                            Нууц үг мартсан бол сургуулийн админд хандана уу — админ
+                            таны бүртгэлд шинэ нууц үг тохируулна (мэдээлэл устахгүй).
+                          </p>
+                        )}
                       </label>
 
                       <motion.button

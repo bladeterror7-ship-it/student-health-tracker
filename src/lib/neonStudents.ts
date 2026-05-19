@@ -182,6 +182,24 @@ export async function updateStudentInNeon(
   window.dispatchEvent(new CustomEvent(STUDENT_REGISTRY_EVENT))
 }
 
+export async function resetStudentPasswordInNeon(
+  id: string,
+  newPassword: string,
+): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/reset-student-password`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({ id, newPassword }),
+  })
+  const data = await readApiJson(res)
+  if (!res.ok || data.ok !== true) {
+    throw new Error(reasonFromPayload(data, 'Нууц үг сэргээхэд алдаа гарлаа'))
+  }
+}
+
 export async function deleteStudentFromNeon(id: string): Promise<void> {
   const res = await fetch(`${API_BASE}/api/students?id=${encodeURIComponent(id)}`, {
     method: 'DELETE',

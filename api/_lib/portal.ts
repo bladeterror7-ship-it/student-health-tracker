@@ -234,3 +234,28 @@ export async function loginPortalAccount(
 
   return { ok: true, account: rowToPortal(row) }
 }
+
+export async function resetPortalPassword(
+  id: string,
+  newPassword: string,
+): Promise<void> {
+  const password = newPassword.trim()
+  if (password.length < 6) {
+    throw new Error('Нууц үг дор хаяж 6 тэмдэгт байх ёстой')
+  }
+
+  await ensureSchema()
+  const sql = getSql()
+  const passwordHash = await bcrypt.hash(password, SALT_ROUNDS)
+
+  const updated = (await sql`
+    UPDATE portal_accounts
+    SET password_hash = ${passwordHash}
+    WHERE id = ${id}::uuid
+    RETURNING id
+  `) as { id: string }[]
+
+  if (!updated[0]) {
+    throw new Error('Хэрэглэгч олдсонгүй')
+  }
+}

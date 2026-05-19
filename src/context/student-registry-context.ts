@@ -32,6 +32,7 @@ export interface StudentRegistryContextValue {
     >,
   ) => void
   deleteStudent: (id: string) => void
+  resetStudentPassword: (id: string, newPassword: string) => Promise<void>
 }
 
 export const StudentRegistryContext =
