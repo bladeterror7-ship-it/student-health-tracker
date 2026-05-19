@@ -8,6 +8,7 @@
     "dev:web": "vite",
     "dev:api": "tsx --env-file=.env server/dev-api.ts",
     "db:init": "tsx --env-file=.env scripts/init-db.ts",
+    "db:clear": "tsx --env-file=.env scripts/clear-all-accounts.ts",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
