@@ -17,6 +17,7 @@ export interface RegisterStudentInput {
 
 export interface StudentRegistryContextValue {
   students: RegisteredStudent[]
+  loading: boolean
   registerStudent: (input: RegisterStudentInput) => { ok: true } | { ok: false; reason: string }
   authenticateStudent: (
     identifier: string,

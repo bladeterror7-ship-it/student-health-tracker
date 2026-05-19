@@ -1,4 +1,6 @@
+import { signOut } from 'firebase/auth'
 import { useCallback, useMemo, useState, type ReactNode } from 'react'
+import { auth } from '../firebaseConfig'
 import type { Session, UserRole } from '../types'
 import { AuthContext } from './auth-context'
 
@@ -74,6 +76,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 
   const logout = useCallback(() => {
+    void signOut(auth).catch(() => {
+      /* Firebase session байхгүй бол үл тооно */
+    })
     localStorage.removeItem(STORAGE_KEY)
     setSession(null)
   }, [])

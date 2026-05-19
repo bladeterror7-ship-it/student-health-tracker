@@ -18,6 +18,10 @@ import { useAuth } from '../context/useAuth'
 import { useStudentRegistry } from '../context/useStudentRegistry'
 import { dashboardPathForRole } from '../lib/authRedirect'
 import {
+  registerStudentWithFirebase,
+  signInStudentWithFirebase,
+} from '../lib/firebaseStudents'
+import {
   authenticatePortalAccount,
   registerAdminAccount,
   registerParentAccount,
@@ -46,8 +50,7 @@ const REGISTER_ROLES: {
 
 export default function LoginPage() {
   const { session, login } = useAuth()
-  const { students, registerStudent, authenticateStudent } =
-    useStudentRegistry()
+  const { students } = useStudentRegistry()
   const navigate = useNavigate()
 
   const [tab, setTab] = useState<AuthTab>('login')
@@ -67,6 +70,7 @@ export default function LoginPage() {
   const [adminInviteCode, setAdminInviteCode] = useState('')
   const [registerEmail, setRegisterEmail] = useState('')
   const [registerPassword, setRegisterPassword] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   function navigateAfterLogin(role: UserRole) {
     navigate(dashboardPathForRole(role), { replace: true })
@@ -125,7 +129,7 @@ export default function LoginPage() {
     return false
   }
 
-  function handleLogin(e: FormEvent) {
+  async function handleLogin(e: FormEvent) {
     e.preventDefault()
 
     if (staffOpen && tryStaffLogin(loginId, loginPassword)) return
@@ -147,40 +151,61 @@ export default function LoginPage() {
       return
     }
 
-    const auth = authenticateStudent(loginId, loginPassword)
-    if (auth.ok === false) {
-      toast.error(auth.reason)
+    if (!loginId.trim().includes('@')) {
+      toast.error('Сурагчийн нэвтрэлтэд и-мэйл хаягаа ашиглана уу')
       return
     }
 
-    const { student, lastName: ln, firstName: fn } = auth.data
-    login({
-      role: 'student',
-      email: student.email,
-      password: loginPassword,
-      displayName: student.fullName,
-      lastName: ln,
-      firstName: fn,
-      classGroup: student.classGroup,
-    })
-    navigateAfterLogin('student')
+    setSubmitting(true)
+    try {
+      const auth = await signInStudentWithFirebase(loginId, loginPassword)
+      if (auth.ok === false) {
+        toast.error(auth.reason)
+        return
+      }
+
+      const { profile } = auth
+      login({
+        role: 'student',
+        email: profile.email,
+        password: loginPassword,
+        displayName: profile.fullName,
+        lastName: profile.lastName ?? profile.fullName.split(/\s+/)[0] ?? '',
+        firstName:
+          profile.firstName ??
+          profile.fullName.split(/\s+/).slice(1).join(' ') ??
+          '',
+        classGroup: profile.classGroup,
+      })
+      navigateAfterLogin('student')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
-  function handleRegister(e: FormEvent) {
+  async function handleRegister(e: FormEvent) {
     e.preventDefault()
 
     if (registerRole === 'student') {
-      const res = registerStudent({
-        email: registerEmail,
-        password: registerPassword,
-        lastName,
-        firstName,
-        classGroup,
-      })
-      if (res.ok === false) {
-        toast.error(res.reason)
-        return
+      setSubmitting(true)
+      try {
+        const res = await registerStudentWithFirebase({
+          email: registerEmail,
+          password: registerPassword,
+          lastName,
+          firstName,
+          classGroup,
+        })
+        if (res.ok === false) {
+          toast.error(res.reason)
+          return
+        }
+        toast.success('Бүртгэл амжилттай боллоо!')
+        setShowSuccess(true)
+      } finally {
+        setSubmitting(false)
       }
+      return
     } else if (registerRole === 'parent') {
       const res = registerParentAccount(
         {
@@ -431,6 +456,7 @@ export default function LoginPage() {
                         whileHover={{ scale: 1.01 }}
                         whileTap={{ scale: 0.985 }}
                         type="submit"
+                        disabled={submitting}
                         style={{ backgroundColor: TEAL }}
                         onMouseEnter={(e) => {
                           e.currentTarget.style.backgroundColor = TEAL_HOVER
@@ -438,9 +464,9 @@ export default function LoginPage() {
                         onMouseLeave={(e) => {
                           e.currentTarget.style.backgroundColor = TEAL
                         }}
-                        className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-teal-950/40 transition"
+                        className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-teal-950/40 transition disabled:opacity-60"
                       >
-                        Нэвтрэх
+                        {submitting ? 'Нэвтэрч байна…' : 'Нэвтрэх'}
                         <ArrowRight className="size-4" aria-hidden />
                       </motion.button>
                     </motion.form>
@@ -664,6 +690,7 @@ export default function LoginPage() {
                         whileHover={{ scale: 1.01 }}
                         whileTap={{ scale: 0.985 }}
                         type="submit"
+                        disabled={submitting}
                         style={{ backgroundColor: TEAL }}
                         onMouseEnter={(e) => {
                           e.currentTarget.style.backgroundColor = TEAL_HOVER
@@ -671,9 +698,9 @@ export default function LoginPage() {
                         onMouseLeave={(e) => {
                           e.currentTarget.style.backgroundColor = TEAL
                         }}
-                        className="mt-1 flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-teal-950/40 transition"
+                        className="mt-1 flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-teal-950/40 transition disabled:opacity-60"
                       >
-                        Бүртгүүлэх
+                        {submitting ? 'Бүртгэж байна…' : 'Бүртгүүлэх'}
                         <ArrowRight className="size-4" aria-hidden />
                       </motion.button>
                     </motion.form>
