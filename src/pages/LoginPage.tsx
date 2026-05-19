@@ -1,0 +1,703 @@
+import { AnimatePresence, motion } from 'framer-motion'
+import {
+  ArrowRight,
+  GraduationCap,
+  KeyRound,
+  Lock,
+  Mail,
+  PartyPopper,
+  ShieldCheck,
+  Sparkles,
+  User,
+  UsersRound,
+} from 'lucide-react'
+import { type FormEvent, useEffect, useState } from 'react'
+import { Navigate, useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
+import { useAuth } from '../context/useAuth'
+import { useStudentRegistry } from '../context/useStudentRegistry'
+import { dashboardPathForRole } from '../lib/authRedirect'
+import {
+  authenticatePortalAccount,
+  registerAdminAccount,
+  registerParentAccount,
+} from '../lib/portalAccountsStorage'
+import { STUDENT_CLASS_OPTIONS, type UserRole } from '../types'
+
+type AuthTab = 'login' | 'register'
+
+const TEAL = '#00BFA5'
+const TEAL_HOVER = '#00a693'
+
+const STAFF_HINT: { role: UserRole; label: string; email: string }[] = [
+  { role: 'admin', label: 'Админ', email: 'admin@school.edu.mn' },
+  { role: 'parent', label: 'Эцэг эх', email: 'parent@school.edu.mn' },
+]
+
+const REGISTER_ROLES: {
+  id: UserRole
+  label: string
+  icon: typeof GraduationCap
+}[] = [
+  { id: 'student', label: 'Сурагч', icon: GraduationCap },
+  { id: 'parent', label: 'Эцэг эх', icon: UsersRound },
+  { id: 'admin', label: 'Админ', icon: ShieldCheck },
+]
+
+export default function LoginPage() {
+  const { session, login } = useAuth()
+  const { students, registerStudent, authenticateStudent } =
+    useStudentRegistry()
+  const navigate = useNavigate()
+
+  const [tab, setTab] = useState<AuthTab>('login')
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [staffOpen, setStaffOpen] = useState(false)
+  const [staffRole, setStaffRole] = useState<UserRole>('admin')
+
+  const [registerRole, setRegisterRole] = useState<UserRole>('student')
+
+  const [loginId, setLoginId] = useState('')
+  const [loginPassword, setLoginPassword] = useState('')
+
+  const [lastName, setLastName] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [classGroup, setClassGroup] = useState<string>(STUDENT_CLASS_OPTIONS[0])
+  const [childStudentRef, setChildStudentRef] = useState('')
+  const [adminInviteCode, setAdminInviteCode] = useState('')
+  const [registerEmail, setRegisterEmail] = useState('')
+  const [registerPassword, setRegisterPassword] = useState('')
+
+  function navigateAfterLogin(role: UserRole) {
+    navigate(dashboardPathForRole(role), { replace: true })
+  }
+
+  useEffect(() => {
+    if (!showSuccess) return
+    const t = window.setTimeout(() => {
+      setShowSuccess(false)
+      setTab('login')
+      setLoginId(registerEmail.trim())
+      setRegisterPassword('')
+      setLastName('')
+      setFirstName('')
+      setChildStudentRef('')
+      setAdminInviteCode('')
+    }, 2000)
+    return () => window.clearTimeout(t)
+  }, [showSuccess, registerEmail])
+
+  if (session) {
+    return <Navigate to={dashboardPathForRole(session.role)} replace />
+  }
+
+  function tryStaffLogin(identifier: string, password: string): boolean {
+    const id = identifier.trim().toLowerCase()
+    if (!password) return false
+
+    const adminHit =
+      staffRole === 'admin' &&
+      (id.includes('admin') || id === 'admin@school.edu.mn')
+    const parentHit =
+      staffRole === 'parent' &&
+      (id.includes('parent') || id === 'parent@school.edu.mn')
+
+    if (adminHit) {
+      login({
+        role: 'admin',
+        email: id.includes('@') ? id : 'admin@school.edu.mn',
+        password,
+        displayName: 'Админ',
+      })
+      navigateAfterLogin('admin')
+      return true
+    }
+    if (parentHit) {
+      login({
+        role: 'parent',
+        email: id.includes('@') ? id : 'parent@school.edu.mn',
+        password,
+        displayName: 'Эцэг эх',
+      })
+      navigateAfterLogin('parent')
+      return true
+    }
+    return false
+  }
+
+  function handleLogin(e: FormEvent) {
+    e.preventDefault()
+
+    if (staffOpen && tryStaffLogin(loginId, loginPassword)) return
+
+    const portal = authenticatePortalAccount(loginId, loginPassword)
+    if (portal.ok) {
+      const { account, lastName: ln, firstName: fn } = portal.data
+      login({
+        role: account.role,
+        email: account.email,
+        password: loginPassword,
+        displayName: account.displayName,
+        lastName: ln,
+        firstName: fn,
+        linkedStudentId: account.linkedStudentId,
+        linkedStudentName: account.linkedStudentName,
+      })
+      navigateAfterLogin(account.role)
+      return
+    }
+
+    const auth = authenticateStudent(loginId, loginPassword)
+    if (auth.ok === false) {
+      toast.error(auth.reason)
+      return
+    }
+
+    const { student, lastName: ln, firstName: fn } = auth.data
+    login({
+      role: 'student',
+      email: student.email,
+      password: loginPassword,
+      displayName: student.fullName,
+      lastName: ln,
+      firstName: fn,
+      classGroup: student.classGroup,
+    })
+    navigateAfterLogin('student')
+  }
+
+  function handleRegister(e: FormEvent) {
+    e.preventDefault()
+
+    if (registerRole === 'student') {
+      const res = registerStudent({
+        email: registerEmail,
+        password: registerPassword,
+        lastName,
+        firstName,
+        classGroup,
+      })
+      if (res.ok === false) {
+        toast.error(res.reason)
+        return
+      }
+    } else if (registerRole === 'parent') {
+      const res = registerParentAccount(
+        {
+          role: 'parent',
+          email: registerEmail,
+          password: registerPassword,
+          lastName,
+          firstName,
+          childStudentRef,
+        },
+        students,
+      )
+      if (res.ok === false) {
+        toast.error(res.reason)
+        return
+      }
+    } else {
+      const res = registerAdminAccount({
+        role: 'admin',
+        email: registerEmail,
+        password: registerPassword,
+        lastName,
+        firstName,
+        inviteCode: adminInviteCode,
+      })
+      if (res.ok === false) {
+        toast.error(res.reason)
+        return
+      }
+    }
+
+    setShowSuccess(true)
+  }
+
+  const inputRing =
+    'focus:border-teal-400/55 focus:ring-2 focus:ring-teal-400/35'
+
+  const inputClass = `w-full rounded-2xl border border-white/15 bg-black/25 py-3 text-sm text-white outline-none transition placeholder:text-white/35 ${inputRing}`
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.4 }}
+      className="relative flex min-h-svh items-center justify-center overflow-hidden bg-gradient-to-br from-slate-950 via-emerald-950/85 to-teal-950/90 px-4 py-12"
+    >
+      <motion.div
+        aria-hidden
+        className="pointer-events-none absolute -left-32 top-24 h-72 w-72 rounded-full bg-teal-500/20 blur-[100px]"
+        animate={{ opacity: [0.35, 0.55, 0.35], scale: [1, 1.08, 1] }}
+        transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      <motion.div
+        aria-hidden
+        className="pointer-events-none absolute -right-24 bottom-16 h-80 w-80 rounded-full bg-emerald-400/18 blur-[110px]"
+        animate={{ opacity: [0.3, 0.5, 0.3], y: [0, -18, 0] }}
+        transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+      />
+
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: 'spring', stiffness: 120, damping: 18 }}
+        className="relative z-10 w-full max-w-md"
+      >
+        <div className="mb-8 text-center">
+          <motion.div
+            initial={{ scale: 0.92 }}
+            animate={{ scale: 1 }}
+            transition={{ type: 'spring', stiffness: 200, damping: 18 }}
+            className="mx-auto mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-1.5 text-sm font-medium text-emerald-100/95 backdrop-blur-md"
+          >
+            <Sparkles className="size-4 text-teal-300" aria-hidden />
+            Physical Education
+          </motion.div>
+          <h1 className="bg-gradient-to-r from-white via-teal-100 to-emerald-100 bg-clip-text text-3xl font-semibold tracking-tight text-transparent sm:text-4xl">
+            Сургуулийн портал
+          </h1>
+          <p className="mt-2 text-sm text-emerald-100/75">
+            Нэвтрэх эсвэл шинээр бүртгүүлнэ үү
+          </p>
+        </div>
+
+        <motion.div
+          layout
+          className="relative overflow-hidden rounded-[28px] border border-white/20 bg-white/10 p-6 shadow-[0_24px_80px_-12px_rgba(0,0,0,0.55)] backdrop-blur-2xl sm:p-8"
+        >
+          <AnimatePresence mode="wait">
+            {showSuccess ? (
+              <motion.div
+                key="success"
+                initial={{ opacity: 0, scale: 0.92 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.96 }}
+                transition={{ type: 'spring', stiffness: 280, damping: 22 }}
+                className="flex min-h-[280px] flex-col items-center justify-center px-4 py-10 text-center"
+              >
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{
+                    type: 'spring',
+                    stiffness: 360,
+                    damping: 18,
+                    delay: 0.05,
+                  }}
+                  className="mb-5 flex size-16 items-center justify-center rounded-2xl border border-teal-300/40 bg-teal-500/20 text-3xl shadow-lg shadow-teal-900/30"
+                >
+                  <PartyPopper className="size-8 text-teal-200" aria-hidden />
+                </motion.div>
+                <p className="text-lg font-semibold text-white">
+                  🎉 Таны бүртгэл амжилттай хийгдлээ!
+                </p>
+                <p className="mt-2 text-sm text-emerald-100/70">
+                  Нэвтрэх хэсэг рүү шилжиж байна…
+                </p>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="forms"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <motion.div
+                  layout
+                  className="relative mb-6 grid grid-cols-2 gap-1 rounded-2xl bg-black/30 p-1 ring-1 ring-white/10"
+                  role="tablist"
+                  aria-label="Нэвтрэх эсвэл бүртгүүлэх"
+                >
+                  {(
+                    [
+                      ['login', 'Нэвтрэх'],
+                      ['register', 'Бүртгүүлэх'],
+                    ] as const
+                  ).map(([id, label]) => {
+                    const active = tab === id
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        role="tab"
+                        aria-selected={active}
+                        onClick={() => {
+                          setTab(id)
+                          setStaffOpen(false)
+                        }}
+                        className={`relative rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${
+                          active
+                            ? 'text-white'
+                            : 'text-white/55 hover:text-white/85'
+                        }`}
+                      >
+                        {active && (
+                          <motion.span
+                            layoutId="auth-tab-pill"
+                            className="absolute inset-0 rounded-xl bg-gradient-to-br from-teal-500/90 to-emerald-600/90 shadow-md shadow-black/25"
+                            transition={{
+                              type: 'spring',
+                              stiffness: 380,
+                              damping: 32,
+                            }}
+                            style={{ zIndex: 0 }}
+                          />
+                        )}
+                        <span className="relative z-[1]">{label}</span>
+                      </button>
+                    )
+                  })}
+                </motion.div>
+
+                <AnimatePresence mode="wait">
+                  {tab === 'login' ? (
+                    <motion.form
+                      key="login-form"
+                      initial={{ opacity: 0, x: -12 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 12 }}
+                      transition={{ duration: 0.22 }}
+                      className="space-y-4 text-left"
+                      onSubmit={handleLogin}
+                    >
+                      {staffOpen && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          className="overflow-hidden"
+                        >
+                          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-white/45">
+                            Багшийн эрх
+                          </p>
+                          <motion.div layout className="mb-3 flex gap-2">
+                            {STAFF_HINT.map((s) => (
+                              <button
+                                key={s.role}
+                                type="button"
+                                onClick={() => setStaffRole(s.role)}
+                                className={`flex-1 rounded-xl border px-2 py-2 text-xs font-semibold transition ${
+                                  staffRole === s.role
+                                    ? 'border-teal-400/50 bg-teal-500/20 text-white'
+                                    : 'border-white/10 bg-black/20 text-white/60 hover:text-white'
+                                }`}
+                              >
+                                {s.label}
+                              </button>
+                            ))}
+                          </motion.div>
+                        </motion.div>
+                      )}
+
+                      <label className="block space-y-1.5">
+                        <span className="text-xs font-medium text-emerald-50/85">
+                          И-мэйл хаяг эсвэл нэр
+                        </span>
+                        <span className="relative flex items-center">
+                          <Mail className="pointer-events-none absolute left-3 size-4 text-white/35" />
+                          <input
+                            type="text"
+                            required
+                            value={loginId}
+                            onChange={(e) => setLoginId(e.target.value)}
+                            className={`${inputClass} pl-10 pr-3`}
+                            placeholder="you@school.edu.mn эсвэл таны нэр"
+                            autoComplete="username"
+                          />
+                        </span>
+                      </label>
+
+                      <label className="block space-y-1.5">
+                        <span className="text-xs font-medium text-emerald-50/85">
+                          Нууц үг
+                        </span>
+                        <span className="relative flex items-center">
+                          <Lock className="pointer-events-none absolute left-3 size-4 text-white/35" />
+                          <input
+                            type="password"
+                            required
+                            value={loginPassword}
+                            onChange={(e) => setLoginPassword(e.target.value)}
+                            className={`${inputClass} pl-10 pr-3`}
+                            placeholder="••••••••"
+                            autoComplete="current-password"
+                          />
+                        </span>
+                      </label>
+
+                      <motion.button
+                        whileHover={{ scale: 1.01 }}
+                        whileTap={{ scale: 0.985 }}
+                        type="submit"
+                        style={{ backgroundColor: TEAL }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = TEAL_HOVER
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = TEAL
+                        }}
+                        className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-teal-950/40 transition"
+                      >
+                        Нэвтрэх
+                        <ArrowRight className="size-4" aria-hidden />
+                      </motion.button>
+                    </motion.form>
+                  ) : (
+                    <motion.form
+                      key="register-form"
+                      initial={{ opacity: 0, x: 12 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -12 }}
+                      transition={{ duration: 0.22 }}
+                      className="space-y-3.5 text-left"
+                      onSubmit={handleRegister}
+                    >
+                      <motion.div layout className="space-y-2">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-white/45">
+                          Бүртгүүлэх эрх
+                        </p>
+                        <div
+                          className="grid grid-cols-3 gap-1 rounded-2xl bg-black/30 p-1 ring-1 ring-white/10"
+                          role="group"
+                          aria-label="Бүртгүүлэх эрх сонгох"
+                        >
+                          {REGISTER_ROLES.map((r) => {
+                            const Icon = r.icon
+                            const active = registerRole === r.id
+                            return (
+                              <button
+                                key={r.id}
+                                type="button"
+                                onClick={() => setRegisterRole(r.id)}
+                                className={`relative flex flex-col items-center gap-1 rounded-xl px-1.5 py-2 text-[10px] font-semibold transition sm:text-[11px] ${
+                                  active
+                                    ? 'text-white'
+                                    : 'text-white/55 hover:text-white/85'
+                                }`}
+                              >
+                                {active && (
+                                  <motion.span
+                                    layoutId="register-role-pill"
+                                    className="absolute inset-0 rounded-xl bg-gradient-to-br from-teal-500/90 to-emerald-600/90 shadow-md"
+                                    transition={{
+                                      type: 'spring',
+                                      stiffness: 380,
+                                      damping: 32,
+                                    }}
+                                    style={{ zIndex: 0 }}
+                                  />
+                                )}
+                                <Icon
+                                  className={`relative size-4 ${active ? 'text-white' : 'text-white/50'}`}
+                                  aria-hidden
+                                />
+                                <span className="relative z-[1] leading-tight">
+                                  {r.label}
+                                </span>
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </motion.div>
+
+                      <label className="block space-y-1.5">
+                        <span className="text-xs font-medium text-emerald-50/85">
+                          Овог
+                        </span>
+                        <span className="relative flex items-center">
+                          <User className="pointer-events-none absolute left-3 size-4 text-white/35" />
+                          <input
+                            type="text"
+                            required
+                            value={lastName}
+                            onChange={(e) => setLastName(e.target.value)}
+                            className={`${inputClass} pl-10 pr-3`}
+                            placeholder="Болд"
+                            autoComplete="family-name"
+                          />
+                        </span>
+                      </label>
+
+                      <label className="block space-y-1.5">
+                        <span className="text-xs font-medium text-emerald-50/85">
+                          Нэр
+                        </span>
+                        <span className="relative flex items-center">
+                          <User className="pointer-events-none absolute left-3 size-4 text-white/35" />
+                          <input
+                            type="text"
+                            required
+                            value={firstName}
+                            onChange={(e) => setFirstName(e.target.value)}
+                            className={`${inputClass} pl-10 pr-3`}
+                            placeholder="Дорж"
+                            autoComplete="given-name"
+                          />
+                        </span>
+                      </label>
+
+                      {registerRole === 'student' && (
+                        <motion.label
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          className="block space-y-1.5 overflow-hidden"
+                        >
+                          <span className="text-xs font-medium text-emerald-50/85">
+                            Анги
+                          </span>
+                          <span className="relative flex items-center">
+                            <GraduationCap className="pointer-events-none absolute left-3 size-4 text-white/35" />
+                            <select
+                              required
+                              value={classGroup}
+                              onChange={(e) => setClassGroup(e.target.value)}
+                              className={`${inputClass} appearance-none pl-10 pr-10`}
+                            >
+                              {STUDENT_CLASS_OPTIONS.map((c) => (
+                                <option
+                                  key={c}
+                                  value={c}
+                                  className="bg-slate-900"
+                                >
+                                  {c}
+                                </option>
+                              ))}
+                            </select>
+                            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-white/40">
+                              ▾
+                            </span>
+                          </span>
+                        </motion.label>
+                      )}
+
+                      {registerRole === 'parent' && (
+                        <motion.label
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          className="block space-y-1.5 overflow-hidden"
+                        >
+                          <span className="text-xs font-medium text-emerald-50/85">
+                            Хүүхдийн сурагчийн ID / Нэр
+                          </span>
+                          <span className="relative flex items-center">
+                            <UsersRound className="pointer-events-none absolute left-3 size-4 text-white/35" />
+                            <input
+                              type="text"
+                              required
+                              value={childStudentRef}
+                              onChange={(e) =>
+                                setChildStudentRef(e.target.value)
+                              }
+                              className={`${inputClass} pl-10 pr-3`}
+                              placeholder="Сурагчийн ID эсвэл бүтэн нэр"
+                            />
+                          </span>
+                        </motion.label>
+                      )}
+
+                      {registerRole === 'admin' && (
+                        <motion.label
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          className="block space-y-1.5 overflow-hidden"
+                        >
+                          <span className="text-xs font-medium text-emerald-50/85">
+                            Админ баталгаажуулах код
+                          </span>
+                          <span className="relative flex items-center">
+                            <KeyRound className="pointer-events-none absolute left-3 size-4 text-white/35" />
+                            <input
+                              type="password"
+                              required
+                              value={adminInviteCode}
+                              onChange={(e) =>
+                                setAdminInviteCode(e.target.value)
+                              }
+                              className={`${inputClass} pl-10 pr-3`}
+                              placeholder="Урилгын код"
+                              autoComplete="off"
+                            />
+                          </span>
+                        </motion.label>
+                      )}
+
+                      <label className="block space-y-1.5">
+                        <span className="text-xs font-medium text-emerald-50/85">
+                          И-мэйл хаяг
+                        </span>
+                        <span className="relative flex items-center">
+                          <Mail className="pointer-events-none absolute left-3 size-4 text-white/35" />
+                          <input
+                            type="email"
+                            required
+                            value={registerEmail}
+                            onChange={(e) => setRegisterEmail(e.target.value)}
+                            className={`${inputClass} pl-10 pr-3`}
+                            placeholder="you@school.edu.mn"
+                            autoComplete="email"
+                          />
+                        </span>
+                      </label>
+
+                      <label className="block space-y-1.5">
+                        <span className="text-xs font-medium text-emerald-50/85">
+                          Нууц үг
+                        </span>
+                        <span className="relative flex items-center">
+                          <Lock className="pointer-events-none absolute left-3 size-4 text-white/35" />
+                          <input
+                            type="password"
+                            required
+                            minLength={4}
+                            value={registerPassword}
+                            onChange={(e) => setRegisterPassword(e.target.value)}
+                            className={`${inputClass} pl-10 pr-3`}
+                            placeholder="••••••••"
+                            autoComplete="new-password"
+                          />
+                        </span>
+                      </label>
+
+                      <motion.button
+                        whileHover={{ scale: 1.01 }}
+                        whileTap={{ scale: 0.985 }}
+                        type="submit"
+                        style={{ backgroundColor: TEAL }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = TEAL_HOVER
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = TEAL
+                        }}
+                        className="mt-1 flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-teal-950/40 transition"
+                      >
+                        Бүртгүүлэх
+                        <ArrowRight className="size-4" aria-hidden />
+                      </motion.button>
+                    </motion.form>
+                  )}
+                </AnimatePresence>
+
+                {tab === 'login' && (
+                  <div className="mt-5 border-t border-white/10 pt-4 text-center">
+                    <button
+                      type="button"
+                      onClick={() => setStaffOpen((o) => !o)}
+                      className="text-xs font-medium text-white/45 transition hover:text-teal-300"
+                    >
+                      {staffOpen
+                        ? 'Сурагчийн нэвтрэлт рүү буцах'
+                        : 'Админ / Эцэг эх нэвтрэх'}
+                    </button>
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+      </motion.div>
+    </motion.div>
+  )
+}
