@@ -59,6 +59,7 @@ export default function LoginPage() {
   const [staffRole, setStaffRole] = useState<UserRole>('admin')
 
   const [registerRole, setRegisterRole] = useState<UserRole>('student')
+  const [loginRole, setLoginRole] = useState<UserRole>('student')
 
   const [loginId, setLoginId] = useState('')
   const [loginPassword, setLoginPassword] = useState('')
@@ -137,8 +138,18 @@ export default function LoginPage() {
     const id = loginId.trim()
     const password = loginPassword
 
-    // И-мэйлээр сурагч — эхлээд Neon DB (Postgres)
-    if (id.includes('@')) {
+    if (!id || !password) {
+      toast.error('И-мэйл болон нууц үгээ оруулна уу')
+      return
+    }
+
+    // —— Сурагч: Neon Postgres ——
+    if (loginRole === 'student') {
+      if (!id.includes('@')) {
+        toast.error('Сурагчийн нэвтрэлтэд и-мэйл хаягаа ашиглана уу')
+        return
+      }
+
       setSubmitting(true)
       try {
         const auth = await signInStudentWithNeon(id, password)
@@ -159,17 +170,28 @@ export default function LoginPage() {
           navigateAfterLogin('student')
           return
         }
-        if (auth.reason !== 'Бүртгэл олдсонгүй') {
-          toast.error(auth.reason)
-          return
-        }
+        toast.error(
+          auth.reason === 'Бүртгэл олдсонгүй'
+            ? 'Бүртгэл олдсонгүй. «Бүртгүүлэх» → Сурагч сонгоод эхлээд бүртгүүлнэ үү (ком болон утас хоёуланд ижил и-мэйл).'
+            : auth.reason,
+        )
       } finally {
         setSubmitting(false)
       }
+      return
     }
 
+    // —— Админ / Эцэг эх: энэ төхөөрөмжийн бүртгэл ——
     const portal = authenticatePortalAccount(id, password)
     if (portal.ok) {
+      if (portal.data.account.role !== loginRole) {
+        toast.error(
+          loginRole === 'admin'
+            ? 'Энэ и-мэйл админ биш — «Админ» эсвэл «Эцэг эх» сонголтоо шалгана уу'
+            : 'Энэ и-мэйл эцэг эх биш — «Эцэг эх» эсвэл «Админ» сонголтоо шалгана уу',
+        )
+        return
+      }
       const { account, lastName: ln, firstName: fn } = portal.data
       login({
         role: account.role,
@@ -185,14 +207,12 @@ export default function LoginPage() {
       return
     }
 
-    if (id.includes('@')) {
-      toast.error(
-        'Бүртгэл олдсонгүй. Эхлээд «Бүртгүүлэх» хэсгээс сурагчаар бүртгүүлнэ үү.',
-      )
-      return
-    }
-
-    toast.error('Сурагчийн нэвтрэлтэд и-мэйл хаягаа ашиглана уу')
+    const roleLabel = loginRole === 'admin' ? 'Админ' : 'Эцэг эх'
+    toast.error(
+      portal.reason === 'Бүртгэл олдсонгүй'
+        ? `${roleLabel} бүртгэл олдсонгүй. «Бүртгүүлэх» → ${roleLabel} сонгоод энэ утас/компьютер дээрээ бүртгүүлнэ үү.`
+        : portal.reason,
+    )
   }
 
   async function handleRegister(e: FormEvent) {
@@ -400,6 +420,32 @@ export default function LoginPage() {
                       className="space-y-4 text-left"
                       onSubmit={handleLogin}
                     >
+                      <div className="space-y-2">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-white/45">
+                          Нэвтрэх эрх
+                        </p>
+                        <motion.div layout className="grid grid-cols-3 gap-1 rounded-2xl bg-black/30 p-1 ring-1 ring-white/10">
+                          {REGISTER_ROLES.map(({ id, label, icon: Icon }) => {
+                            const active = loginRole === id
+                            return (
+                              <button
+                                key={id}
+                                type="button"
+                                onClick={() => setLoginRole(id)}
+                                className={`flex flex-col items-center gap-1 rounded-xl px-1 py-2 text-[10px] font-semibold transition ${
+                                  active
+                                    ? 'bg-teal-500/25 text-white ring-1 ring-teal-400/40'
+                                    : 'text-white/55 hover:text-white/85'
+                                }`}
+                              >
+                                <Icon className="size-4" aria-hidden />
+                                {label}
+                              </button>
+                            )
+                          })}
+                        </motion.div>
+                      </div>
+
                       {staffOpen && (
                         <motion.div
                           initial={{ opacity: 0, height: 0 }}
@@ -407,7 +453,7 @@ export default function LoginPage() {
                           className="overflow-hidden"
                         >
                           <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-white/45">
-                            Багшийн эрх
+                            Багшийн эрх (туршилт)
                           </p>
                           <motion.div layout className="mb-3 flex gap-2">
                             {STAFF_HINT.map((s) => (
@@ -430,7 +476,9 @@ export default function LoginPage() {
 
                       <label className="block space-y-1.5">
                         <span className="text-xs font-medium text-emerald-50/85">
-                          И-мэйл хаяг эсвэл нэр
+                          {loginRole === 'student'
+                            ? 'И-мэйл хаяг'
+                            : 'И-мэйл хаяг эсвэл нэр'}
                         </span>
                         <span className="relative flex items-center">
                           <Mail className="pointer-events-none absolute left-3 size-4 text-white/35" />
