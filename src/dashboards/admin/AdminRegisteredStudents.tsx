@@ -286,7 +286,9 @@ export default function AdminRegisteredStudents() {
         </table>
         {filtered.length === 0 && (
           <p className="py-10 text-center text-sm text-slate-500 dark:text-orange-50/55">
-            Илэрц алга — шүүлт эсвэл хайлтыг өөрчилнө үү.
+            {students.length === 0
+              ? 'Бүртгэл алга. Сурагч /login дээр бүртгүүлсний дараа энэ хуудсыг шинэчлэнэ үү (ижил браузер).'
+              : 'Илэрц алга — шүүлт эсвэл хайлтыг өөрчилнө үү.'}
           </p>
         )}
       </div>

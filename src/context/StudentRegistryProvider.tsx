@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import {
   setStudentPassword,
   verifyStudentPassword,
@@ -11,6 +11,8 @@ import {
 } from './student-registry-context'
 
 const STORAGE_KEY = 'pe-registry-v1'
+
+export const STUDENT_REGISTRY_EVENT = 'pe-student-registry-changed'
 
 const LEGACY_SEED_IDS = new Set(['seed_demo', 'seed_1', 'seed_2'])
 const LEGACY_SEED_EMAILS = new Set([
@@ -27,28 +29,42 @@ function stripLegacySeeds(list: RegisteredStudent[]): RegisteredStudent[] {
   )
 }
 
+function readRegistry(): RegisteredStudent[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw) as RegisteredStudent[]
+    if (!Array.isArray(parsed)) return []
+    return stripLegacySeeds(parsed)
+  } catch {
+    return []
+  }
+}
+
 function loadInitial(): RegisteredStudent[] {
+  const cleaned = readRegistry()
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {
       const parsed = JSON.parse(raw) as RegisteredStudent[]
-      if (Array.isArray(parsed)) {
-        const cleaned = stripLegacySeeds(parsed)
-        if (cleaned.length !== parsed.length) persist(cleaned)
-        return cleaned
+      if (Array.isArray(parsed) && stripLegacySeeds(parsed).length !== parsed.length) {
+        persist(cleaned, { silent: true })
       }
     }
   } catch {
     /* ignore */
   }
-  return []
+  return cleaned
 }
 
-function persist(list: RegisteredStudent[]) {
+function persist(list: RegisteredStudent[], opts?: { silent?: boolean }) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(list))
   } catch {
     /* ignore */
+  }
+  if (!opts?.silent) {
+    window.dispatchEvent(new CustomEvent(STUDENT_REGISTRY_EVENT))
   }
 }
 
@@ -58,6 +74,19 @@ function isValidClass(c: string) {
 
 export function StudentRegistryProvider({ children }: { children: ReactNode }) {
   const [students, setStudents] = useState<RegisteredStudent[]>(loadInitial)
+
+  useEffect(() => {
+    const sync = () => setStudents(readRegistry())
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY || e.key === null) sync()
+    }
+    window.addEventListener(STUDENT_REGISTRY_EVENT, sync)
+    window.addEventListener('storage', onStorage)
+    return () => {
+      window.removeEventListener(STUDENT_REGISTRY_EVENT, sync)
+      window.removeEventListener('storage', onStorage)
+    }
+  }, [])
 
   const registerStudent = useCallback((input: RegisterStudentInput) => {
     const email = input.email.trim().toLowerCase()
