@@ -4,22 +4,40 @@ const API_BASE = import.meta.env.VITE_API_BASE ?? ''
 
 export const STUDENT_REGISTRY_EVENT = 'pe-student-registry-changed'
 
-async function parseJson<T>(res: Response): Promise<T> {
-  const data = (await res.json()) as T & { error?: string; reason?: string }
-  if (!res.ok) {
-    const msg =
-      (data as { reason?: string }).reason ??
-      (data as { error?: string }).error ??
-      `HTTP ${res.status}`
-    throw new Error(msg)
+type ApiPayload = Record<string, unknown>
+
+async function readApiJson(res: Response): Promise<ApiPayload> {
+  const text = await res.text()
+  if (!text.trim()) {
+    throw new Error('Сервер хоосон хариу буцаалаа')
   }
-  return data
+  try {
+    return JSON.parse(text) as ApiPayload
+  } catch {
+    if (text.trimStart().startsWith('<')) {
+      throw new Error(
+        'API ажиллахгүй байна. Vercel дээр DATABASE_URL тохируулсан эсэхээ шалгана уу.',
+      )
+    }
+    throw new Error('Серверийн хариу буруу байна')
+  }
+}
+
+function reasonFromPayload(data: ApiPayload, fallback: string): string {
+  const reason = data.reason
+  const error = data.error
+  if (typeof reason === 'string' && reason) return reason
+  if (typeof error === 'string' && error) return error
+  return fallback
 }
 
 export async function fetchStudentsFromApi(): Promise<RegisteredStudent[]> {
   const res = await fetch(`${API_BASE}/api/students`)
-  const data = await parseJson<{ students: RegisteredStudent[] }>(res)
-  return data.students
+  const data = await readApiJson(res)
+  if (!res.ok) {
+    throw new Error(reasonFromPayload(data, `HTTP ${res.status}`))
+  }
+  return (data.students as RegisteredStudent[]) ?? []
 }
 
 export async function registerStudentWithNeon(input: {
@@ -35,15 +53,15 @@ export async function registerStudentWithNeon(input: {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(input),
     })
-    const data = await res.json()
-    if (!res.ok || !data.ok) {
+    const data = await readApiJson(res)
+    if (!res.ok || data.ok !== true) {
       return {
         ok: false,
-        reason: data.reason ?? data.error ?? 'Бүртгэл амжилтгүй',
+        reason: reasonFromPayload(data, 'Бүртгэл амжилтгүй'),
       }
     }
     window.dispatchEvent(new CustomEvent(STUDENT_REGISTRY_EVENT))
-    return { ok: true, student: data.student }
+    return { ok: true, student: data.student as RegisteredStudent }
   } catch (error) {
     console.error('Neon register:', error)
     return {
@@ -65,14 +83,14 @@ export async function signInStudentWithNeon(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     })
-    const data = await res.json()
-    if (!res.ok || !data.ok) {
+    const data = await readApiJson(res)
+    if (!res.ok || data.ok !== true) {
       return {
         ok: false,
-        reason: data.reason ?? data.error ?? 'Нэвтрэлт амжилтгүй',
+        reason: reasonFromPayload(data, 'Нэвтрэлт амжилтгүй'),
       }
     }
-    return { ok: true, profile: data.student }
+    return { ok: true, profile: data.student as RegisteredStudent }
   } catch (error) {
     console.error('Neon login:', error)
     return {
@@ -93,7 +111,10 @@ export async function updateStudentInNeon(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id, patch }),
   })
-  await parseJson(res)
+  const data = await readApiJson(res)
+  if (!res.ok) {
+    throw new Error(reasonFromPayload(data, `HTTP ${res.status}`))
+  }
   window.dispatchEvent(new CustomEvent(STUDENT_REGISTRY_EVENT))
 }
 
@@ -101,6 +122,9 @@ export async function deleteStudentFromNeon(id: string): Promise<void> {
   const res = await fetch(`${API_BASE}/api/students?id=${encodeURIComponent(id)}`, {
     method: 'DELETE',
   })
-  await parseJson(res)
+  const data = await readApiJson(res)
+  if (!res.ok) {
+    throw new Error(reasonFromPayload(data, `HTTP ${res.status}`))
+  }
   window.dispatchEvent(new CustomEvent(STUDENT_REGISTRY_EVENT))
 }

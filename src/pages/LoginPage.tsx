@@ -656,7 +656,10 @@ export default function LoginPage() {
                         <span className="relative flex items-center">
                           <Mail className="pointer-events-none absolute left-3 size-4 text-white/35" />
                           <input
-                            type="email"
+                            type="text"
+                            inputMode="email"
+                            autoCapitalize="none"
+                            autoCorrect="off"
                             required
                             value={registerEmail}
                             onChange={(e) => setRegisterEmail(e.target.value)}

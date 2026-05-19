@@ -1,6 +1,18 @@
 import bcrypt from 'bcryptjs'
 import type { RegisteredStudent } from '../../src/types'
-import { STUDENT_CLASS_OPTIONS } from '../../src/types'
+
+const STUDENT_CLASS_OPTIONS = [
+  '6-1',
+  '7-1',
+  '7-2',
+  '8-1',
+  '9-1',
+  '10-1',
+  '10-2',
+  '11-1',
+  '11-2',
+  '12-1',
+] as const
 import { ensureSchema, getSql } from './db'
 
 const SALT_ROUNDS = 10
