@@ -134,13 +134,47 @@ export default function LoginPage() {
 
     if (staffOpen && tryStaffLogin(loginId, loginPassword)) return
 
-    const portal = authenticatePortalAccount(loginId, loginPassword)
+    const id = loginId.trim()
+    const password = loginPassword
+
+    // И-мэйлээр сурагч — эхлээд Neon DB (Postgres)
+    if (id.includes('@')) {
+      setSubmitting(true)
+      try {
+        const auth = await signInStudentWithNeon(id, password)
+        if (auth.ok) {
+          const { profile } = auth
+          login({
+            role: 'student',
+            email: profile.email,
+            password,
+            displayName: profile.fullName,
+            lastName: profile.lastName ?? profile.fullName.split(/\s+/)[0] ?? '',
+            firstName:
+              profile.firstName ??
+              profile.fullName.split(/\s+/).slice(1).join(' ') ??
+              '',
+            classGroup: profile.classGroup,
+          })
+          navigateAfterLogin('student')
+          return
+        }
+        if (auth.reason !== 'Бүртгэл олдсонгүй') {
+          toast.error(auth.reason)
+          return
+        }
+      } finally {
+        setSubmitting(false)
+      }
+    }
+
+    const portal = authenticatePortalAccount(id, password)
     if (portal.ok) {
       const { account, lastName: ln, firstName: fn } = portal.data
       login({
         role: account.role,
         email: account.email,
-        password: loginPassword,
+        password,
         displayName: account.displayName,
         lastName: ln,
         firstName: fn,
@@ -151,36 +185,14 @@ export default function LoginPage() {
       return
     }
 
-    if (!loginId.trim().includes('@')) {
-      toast.error('Сурагчийн нэвтрэлтэд и-мэйл хаягаа ашиглана уу')
+    if (id.includes('@')) {
+      toast.error(
+        'Бүртгэл олдсонгүй. Эхлээд «Бүртгүүлэх» хэсгээс сурагчаар бүртгүүлнэ үү.',
+      )
       return
     }
 
-    setSubmitting(true)
-    try {
-      const auth = await signInStudentWithNeon(loginId, loginPassword)
-      if (auth.ok === false) {
-        toast.error(auth.reason)
-        return
-      }
-
-      const { profile } = auth
-      login({
-        role: 'student',
-        email: profile.email,
-        password: loginPassword,
-        displayName: profile.fullName,
-        lastName: profile.lastName ?? profile.fullName.split(/\s+/)[0] ?? '',
-        firstName:
-          profile.firstName ??
-          profile.fullName.split(/\s+/).slice(1).join(' ') ??
-          '',
-        classGroup: profile.classGroup,
-      })
-      navigateAfterLogin('student')
-    } finally {
-      setSubmitting(false)
-    }
+    toast.error('Сурагчийн нэвтрэлтэд и-мэйл хаягаа ашиглана уу')
   }
 
   async function handleRegister(e: FormEvent) {

@@ -3,6 +3,12 @@ import { parseJsonBody } from './_lib/body.js'
 import { applyCors, handleOptions } from './_lib/cors.js'
 import { loginStudent } from '../lib/server/students.js'
 
+export const config = {
+  api: {
+    bodyParser: true,
+  },
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   applyCors(res, 'POST, OPTIONS')
   if (handleOptions(req, res)) return

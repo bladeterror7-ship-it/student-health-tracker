@@ -2,6 +2,9 @@ import type { RegisteredStudent } from '../types'
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? ''
 
+const LOGIN_URLS = ['/api/login-student', '/api/auth/login-student']
+const REGISTER_URLS = ['/api/register-student', '/api/auth/register-student']
+
 export const STUDENT_REGISTRY_EVENT = 'pe-student-registry-changed'
 
 type ApiPayload = Record<string, unknown>
@@ -38,6 +41,42 @@ function reasonFromPayload(data: ApiPayload, fallback: string): string {
   return fallback
 }
 
+function studentFromPayload(data: ApiPayload): RegisteredStudent | null {
+  const raw = data.student ?? data.profile
+  if (!raw || typeof raw !== 'object') return null
+  const s = raw as RegisteredStudent
+  if (!s.id || !s.email) return null
+  return s
+}
+
+async function postJson(url: string, body: unknown): Promise<{ res: Response; data: ApiPayload }> {
+  const res = await fetch(`${API_BASE}${url}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify(body),
+  })
+  const data = await readApiJson(res)
+  return { res, data }
+}
+
+async function postWithFallback(
+  urls: string[],
+  body: unknown,
+): Promise<{ res: Response; data: ApiPayload }> {
+  let lastError: Error | null = null
+  for (const url of urls) {
+    try {
+      return await postJson(url, body)
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error))
+    }
+  }
+  throw lastError ?? new Error('Серверт холбогдож чадсангүй')
+}
+
 export async function fetchStudentsFromApi(): Promise<RegisteredStudent[]> {
   const res = await fetch(`${API_BASE}/api/students`, {
     headers: { Accept: 'application/json' },
@@ -57,29 +96,27 @@ export async function registerStudentWithNeon(input: {
   classGroup: string
 }): Promise<{ ok: true; student: RegisteredStudent } | { ok: false; reason: string }> {
   try {
-    const res = await fetch(`${API_BASE}/api/register-student`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify({
-        email: input.email.trim().toLowerCase(),
-        password: input.password,
-        lastName: input.lastName.trim(),
-        firstName: input.firstName.trim(),
-        classGroup: input.classGroup.trim(),
-      }),
-    })
-    const data = await readApiJson(res)
-    if (!res.ok || data.ok !== true) {
+    const payload = {
+      email: input.email.trim().toLowerCase(),
+      password: input.password,
+      lastName: input.lastName.trim(),
+      firstName: input.firstName.trim(),
+      classGroup: input.classGroup.trim(),
+    }
+    const { res, data } = await postWithFallback(REGISTER_URLS, payload)
+    const student = studentFromPayload(data)
+
+    if (!res.ok || (!student && data.ok !== true)) {
       return {
         ok: false,
         reason: reasonFromPayload(data, 'Бүртгэл амжилтгүй'),
       }
     }
+    if (!student) {
+      return { ok: false, reason: 'Серверээс сурагчийн мэдээлэл ирээгүй' }
+    }
     window.dispatchEvent(new CustomEvent(STUDENT_REGISTRY_EVENT))
-    return { ok: true, student: data.student as RegisteredStudent }
+    return { ok: true, student }
   } catch (error) {
     console.error('Neon register:', error)
     return {
@@ -96,25 +133,25 @@ export async function signInStudentWithNeon(
   { ok: true; profile: RegisteredStudent } | { ok: false; reason: string }
 > {
   try {
-    const res = await fetch(`${API_BASE}/api/login-student`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify({
-        email: email.trim().toLowerCase(),
-        password,
-      }),
-    })
-    const data = await readApiJson(res)
-    if (!res.ok || data.ok !== true) {
+    const payload = {
+      email: email.trim().toLowerCase(),
+      password,
+    }
+    const { res, data } = await postWithFallback(LOGIN_URLS, payload)
+    const student = studentFromPayload(data)
+
+    if (student && (data.ok === true || res.ok)) {
+      return { ok: true, profile: student }
+    }
+
+    if (!res.ok || data.ok === false) {
       return {
         ok: false,
         reason: reasonFromPayload(data, 'Нэвтрэлт амжилтгүй'),
       }
     }
-    return { ok: true, profile: data.student as RegisteredStudent }
+
+    return { ok: false, reason: 'Серверээс сурагчийн мэдээлэл ирээгүй' }
   } catch (error) {
     console.error('Neon login:', error)
     return {
