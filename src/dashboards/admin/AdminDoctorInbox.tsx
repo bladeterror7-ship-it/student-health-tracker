@@ -3,7 +3,7 @@ import { Inbox, MessageCircleHeart, Send, Stethoscope } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { useDoctorQuestions } from '../../hooks/useDoctorQuestions'
-import { replyToDoctorQuestion } from '../../lib/doctorQuestionsStorage'
+import { patchDoctorReply } from '../../lib/neonDoctorQuestions'
 import type { DoctorQuestion } from '../../types'
 
 function formatRelativeMn(iso: string): string {
@@ -44,7 +44,7 @@ function senderLabel(q: DoctorQuestion) {
 }
 
 export default function AdminDoctorInbox() {
-  const questions = useDoctorQuestions()
+  const { questions } = useDoctorQuestions()
   const sorted = useMemo(
     () =>
       [...questions].sort(
@@ -79,28 +79,30 @@ export default function AdminDoctorInbox() {
     setDraftOverrides((prev) => ({ ...prev, [selected.id]: val }))
   }
 
-  const onSendReply = useCallback(() => {
+  const onSendReply = useCallback(async () => {
     if (!selected) return
     const text = replyDraft.trim()
     if (!text) {
       toast.error('Хариултаа бичнэ үү')
       return
     }
-    const updated = replyToDoctorQuestion(selected.id, text)
-    if (!updated) {
-      toast.error('Хадгалахад алдаа гарлаа')
-      return
+    try {
+      await patchDoctorReply(selected.id, text)
+      setDraftOverrides((prev) => {
+        const next = { ...prev }
+        delete next[selected.id]
+        return next
+      })
+      setSendFlash(true)
+      window.setTimeout(() => setSendFlash(false), 900)
+      toast.success('Хариу амжилттай илгээгдлээ', {
+        description: 'Сурагчийн самбарт харагдана.',
+      })
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : 'Хадгалахад алдаа гарлаа',
+      )
     }
-    setDraftOverrides((prev) => {
-      const next = { ...prev }
-      delete next[selected.id]
-      return next
-    })
-    setSendFlash(true)
-    window.setTimeout(() => setSendFlash(false), 900)
-    toast.success('Хариу амжилттай илгээгдлээ', {
-      description: 'Сурагчийн самбарт харагдана.',
-    })
   }, [replyDraft, selected])
 
   return (

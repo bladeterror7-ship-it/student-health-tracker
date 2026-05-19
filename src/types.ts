@@ -100,7 +100,7 @@ export interface RegisteredStudent {
 
 export type DoctorQuestionStatus = 'new' | 'answered'
 
-/** Student → school doctor confidential message (demo: localStorage). */
+/** Student → school doctor confidential message (Neon DB). */
 export interface DoctorQuestion {
   id: string
   studentEmail: string

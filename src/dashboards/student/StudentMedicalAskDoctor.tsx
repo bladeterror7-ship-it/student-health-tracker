@@ -11,7 +11,7 @@ import { toast } from 'sonner'
 import { useAuth } from '../../context/useAuth'
 import { useStudentRegistry } from '../../context/useStudentRegistry'
 import { useDoctorQuestions } from '../../hooks/useDoctorQuestions'
-import { addDoctorQuestion } from '../../lib/doctorQuestionsStorage'
+import { postDoctorQuestion } from '../../lib/neonDoctorQuestions'
 import { STUDENT_CLASS_OPTIONS } from '../../types'
 
 function formatRelativeMn(iso: string): string {
@@ -35,7 +35,8 @@ function formatRelativeMn(iso: string): string {
 export default function StudentMedicalAskDoctor() {
   const { session } = useAuth()
   const { students } = useStudentRegistry()
-  const allQuestions = useDoctorQuestions()
+  const { questions: allQuestions } = useDoctorQuestions()
+  const [submitting, setSubmitting] = useState(false)
 
   const registryMatch = useMemo(() => {
     if (!session) return undefined
@@ -65,27 +66,35 @@ export default function StudentMedicalAskDoctor() {
       )
   }, [allQuestions, session])
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    if (!session) return
+    if (!session || submitting) return
     const text = message.trim()
     if (!text) return
 
-    addDoctorQuestion({
-      studentEmail: session.email,
-      studentDisplayName: registryMatch?.fullName ?? session.displayName,
-      anonymous,
-      classGroup,
-      body: text,
-    })
-
-    setMessage('')
-    setAnonymous(false)
-    setSentPulse(true)
-    window.setTimeout(() => setSentPulse(false), 2200)
-    toast.success('Асуулт илгээгдлээ', {
-      description: 'Эмч хариулах үед доор харагдана.',
-    })
+    setSubmitting(true)
+    try {
+      await postDoctorQuestion({
+        studentEmail: session.email,
+        studentDisplayName: registryMatch?.fullName ?? session.displayName,
+        anonymous,
+        classGroup,
+        body: text,
+      })
+      setMessage('')
+      setAnonymous(false)
+      setSentPulse(true)
+      window.setTimeout(() => setSentPulse(false), 2200)
+      toast.success('Асуулт илгээгдлээ', {
+        description: 'Эмч хариулах үед доор харагдана.',
+      })
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : 'Асуулт илгээхэд алдаа гарлаа',
+      )
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   if (!session) return null
@@ -182,7 +191,7 @@ export default function StudentMedicalAskDoctor() {
 
           <motion.button
             type="submit"
-            disabled={!message.trim()}
+            disabled={!message.trim() || submitting}
             whileHover={
               message.trim()
                 ? {

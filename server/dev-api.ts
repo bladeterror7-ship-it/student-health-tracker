@@ -11,6 +11,11 @@ import {
   registerParentAccount,
 } from '../api/_lib/portal.js'
 import {
+  addDoctorQuestion,
+  listDoctorQuestions,
+  replyToDoctorQuestion,
+} from '../api/_lib/doctorQuestions.js'
+import {
   deleteStudent,
   listStudents,
   loginStudent,
@@ -134,6 +139,61 @@ app.post('/api/register-admin', async (req, res) => {
     }
     res.status(201).json({ ok: true, account: result.account })
   } catch (error) {
+    res.status(500).json({
+      ok: false,
+      reason: error instanceof Error ? error.message : 'Server error',
+    })
+  }
+})
+
+app.get('/api/doctor-questions', async (_req, res) => {
+  try {
+    const questions = await listDoctorQuestions()
+    res.json({ ok: true, questions })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({
+      ok: false,
+      reason: error instanceof Error ? error.message : 'Server error',
+    })
+  }
+})
+
+app.post('/api/doctor-questions', async (req, res) => {
+  try {
+    const question = await addDoctorQuestion({
+      studentEmail: req.body.studentEmail ?? req.body.studentemail ?? '',
+      studentDisplayName:
+        req.body.studentDisplayName ?? req.body.studentdisplayname ?? 'Сурагч',
+      anonymous: Boolean(req.body.anonymous),
+      classGroup: req.body.classGroup ?? req.body.classgroup ?? '',
+      body: req.body.body ?? '',
+    })
+    res.status(201).json({ ok: true, question })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({
+      ok: false,
+      reason: error instanceof Error ? error.message : 'Server error',
+    })
+  }
+})
+
+app.patch('/api/doctor-questions', async (req, res) => {
+  try {
+    const { id, reply } = req.body as { id?: string; reply?: string }
+    if (!id || !reply) {
+      res.status(400).json({ ok: false, reason: 'id болон reply шаардлагатай' })
+      return
+    }
+    const question = await replyToDoctorQuestion(id, reply)
+    if (!question) {
+      res.status(404).json({ ok: false, reason: 'Асуулт олдсонгүй' })
+      return
+    }
+    res.json({ ok: true, question })
+  } catch (error) {
+    console.error(error)
     res.status(500).json({
       ok: false,
       reason: error instanceof Error ? error.message : 'Server error',
