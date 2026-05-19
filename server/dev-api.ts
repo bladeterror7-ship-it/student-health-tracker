@@ -6,6 +6,11 @@ import 'dotenv/config'
 import cors from 'cors'
 import express from 'express'
 import {
+  loginPortalAccount,
+  registerAdminAccount,
+  registerParentAccount,
+} from '../api/_lib/portal.js'
+import {
   deleteStudent,
   listStudents,
   loginStudent,
@@ -103,6 +108,58 @@ app.post('/api/register-student', handleRegister)
 app.post('/api/auth/register-student', handleRegister)
 app.post('/api/login-student', handleLogin)
 app.post('/api/auth/login-student', handleLogin)
+
+app.post('/api/register-parent', async (req, res) => {
+  try {
+    const result = await registerParentAccount(req.body)
+    if (!result.ok) {
+      res.status(400).json({ ok: false, reason: result.reason })
+      return
+    }
+    res.status(201).json({ ok: true, account: result.account })
+  } catch (error) {
+    res.status(500).json({
+      ok: false,
+      reason: error instanceof Error ? error.message : 'Server error',
+    })
+  }
+})
+
+app.post('/api/register-admin', async (req, res) => {
+  try {
+    const result = await registerAdminAccount(req.body)
+    if (!result.ok) {
+      res.status(400).json({ ok: false, reason: result.reason })
+      return
+    }
+    res.status(201).json({ ok: true, account: result.account })
+  } catch (error) {
+    res.status(500).json({
+      ok: false,
+      reason: error instanceof Error ? error.message : 'Server error',
+    })
+  }
+})
+
+app.post('/api/login-portal', async (req, res) => {
+  try {
+    const result = await loginPortalAccount(
+      req.body.identifier ?? req.body.email ?? '',
+      req.body.password ?? '',
+      req.body.role,
+    )
+    if (!result.ok) {
+      res.status(401).json({ ok: false, reason: result.reason })
+      return
+    }
+    res.json({ ok: true, account: result.account })
+  } catch (error) {
+    res.status(500).json({
+      ok: false,
+      reason: error instanceof Error ? error.message : 'Server error',
+    })
+  }
+})
 
 app.listen(PORT, () => {
   console.log(`API server http://localhost:${PORT}`)

@@ -38,6 +38,24 @@ export function ensureSchema(): Promise<void> {
       await sql`
         CREATE INDEX IF NOT EXISTS students_email_idx ON students (LOWER(email))
       `
+      await sql`
+        CREATE TABLE IF NOT EXISTS portal_accounts (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          role TEXT NOT NULL CHECK (role IN ('admin', 'parent')),
+          email TEXT NOT NULL UNIQUE,
+          password_hash TEXT NOT NULL,
+          last_name TEXT NOT NULL,
+          first_name TEXT NOT NULL,
+          display_name TEXT NOT NULL,
+          linked_student_id UUID,
+          linked_student_name TEXT,
+          status TEXT NOT NULL DEFAULT 'active',
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `
+      await sql`
+        CREATE INDEX IF NOT EXISTS portal_accounts_email_idx ON portal_accounts (LOWER(email))
+      `
     })().catch((error) => {
       schemaReady = null
       throw error

@@ -15,17 +15,16 @@ import { type FormEvent, useEffect, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useAuth } from '../context/useAuth'
-import { useStudentRegistry } from '../context/useStudentRegistry'
 import { dashboardPathForRole } from '../lib/authRedirect'
 import {
   registerStudentWithNeon,
   signInStudentWithNeon,
 } from '../lib/neonStudents'
 import {
-  authenticatePortalAccount,
-  registerAdminAccount,
-  registerParentAccount,
-} from '../lib/portalAccountsStorage'
+  registerAdminWithNeon,
+  registerParentWithNeon,
+  signInPortalWithNeon,
+} from '../lib/neonPortal'
 import { STUDENT_CLASS_OPTIONS, type UserRole } from '../types'
 
 type AuthTab = 'login' | 'register'
@@ -50,7 +49,6 @@ const REGISTER_ROLES: {
 
 export default function LoginPage() {
   const { session, login } = useAuth()
-  const { students } = useStudentRegistry()
   const navigate = useNavigate()
 
   const [tab, setTab] = useState<AuthTab>('login')
@@ -181,38 +179,39 @@ export default function LoginPage() {
       return
     }
 
-    // —— Админ / Эцэг эх: энэ төхөөрөмжийн бүртгэл ——
-    const portal = authenticatePortalAccount(id, password)
-    if (portal.ok) {
-      if (portal.data.account.role !== loginRole) {
-        toast.error(
-          loginRole === 'admin'
-            ? 'Энэ и-мэйл админ биш — «Админ» эсвэл «Эцэг эх» сонголтоо шалгана уу'
-            : 'Энэ и-мэйл эцэг эх биш — «Эцэг эх» эсвэл «Админ» сонголтоо шалгана уу',
-        )
-        return
-      }
-      const { account, lastName: ln, firstName: fn } = portal.data
-      login({
-        role: account.role,
-        email: account.email,
-        password,
-        displayName: account.displayName,
-        lastName: ln,
-        firstName: fn,
-        linkedStudentId: account.linkedStudentId,
-        linkedStudentName: account.linkedStudentName,
-      })
-      navigateAfterLogin(account.role)
+    // —— Админ / Эцэг эх: Neon Postgres ——
+    if (loginRole !== 'admin' && loginRole !== 'parent') {
+      toast.error('Эрх сонголтоо шалгана уу')
       return
     }
 
-    const roleLabel = loginRole === 'admin' ? 'Админ' : 'Эцэг эх'
-    toast.error(
-      portal.reason === 'Бүртгэл олдсонгүй'
-        ? `${roleLabel} бүртгэл олдсонгүй. «Бүртгүүлэх» → ${roleLabel} сонгоод энэ утас/компьютер дээрээ бүртгүүлнэ үү.`
-        : portal.reason,
-    )
+    setSubmitting(true)
+    try {
+      const portal = await signInPortalWithNeon(id, password, loginRole)
+      if (portal.ok) {
+        const { account, lastName: ln, firstName: fn } = portal
+        login({
+          role: account.role,
+          email: account.email,
+          password,
+          displayName: account.displayName,
+          lastName: ln,
+          firstName: fn,
+          linkedStudentId: account.linkedStudentId,
+          linkedStudentName: account.linkedStudentName,
+        })
+        navigateAfterLogin(account.role)
+        return
+      }
+      const roleLabel = loginRole === 'admin' ? 'Админ' : 'Эцэг эх'
+      toast.error(
+        portal.reason === 'Бүртгэл олдсонгүй'
+          ? `${roleLabel} бүртгэл олдсонгүй. «Бүртгүүлэх» → ${roleLabel} сонгоод бүртгүүлнэ үү.`
+          : portal.reason,
+      )
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   async function handleRegister(e: FormEvent) {
@@ -239,33 +238,40 @@ export default function LoginPage() {
       }
       return
     } else if (registerRole === 'parent') {
-      const res = registerParentAccount(
-        {
-          role: 'parent',
+      setSubmitting(true)
+      try {
+        const res = await registerParentWithNeon({
           email: registerEmail,
           password: registerPassword,
           lastName,
           firstName,
           childStudentRef,
-        },
-        students,
-      )
-      if (res.ok === false) {
-        toast.error(res.reason)
-        return
+        })
+        if (res.ok === false) {
+          toast.error(res.reason)
+          return
+        }
+        toast.success('Бүртгэл амжилттай боллоо!')
+      } finally {
+        setSubmitting(false)
       }
     } else {
-      const res = registerAdminAccount({
-        role: 'admin',
-        email: registerEmail,
-        password: registerPassword,
-        lastName,
-        firstName,
-        inviteCode: adminInviteCode,
-      })
-      if (res.ok === false) {
-        toast.error(res.reason)
-        return
+      setSubmitting(true)
+      try {
+        const res = await registerAdminWithNeon({
+          email: registerEmail,
+          password: registerPassword,
+          lastName,
+          firstName,
+          inviteCode: adminInviteCode,
+        })
+        if (res.ok === false) {
+          toast.error(res.reason)
+          return
+        }
+        toast.success('Бүртгэл амжилттай боллоо!')
+      } finally {
+        setSubmitting(false)
       }
     }
 
