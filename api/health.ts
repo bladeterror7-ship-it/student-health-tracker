@@ -1,11 +1,20 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
+import { pingDatabase } from './_lib/db.js'
 import { applyCors } from './_lib/cors.js'
 
-export default function handler(_req: VercelRequest, res: VercelResponse) {
+export default async function handler(_req: VercelRequest, res: VercelResponse) {
   applyCors(res, 'GET, OPTIONS')
-  res.status(200).json({
-    ok: true,
+  const databaseConfigured = Boolean(process.env.DATABASE_URL)
+  let databaseConnected = false
+
+  if (databaseConfigured) {
+    databaseConnected = await pingDatabase()
+  }
+
+  res.status(databaseConnected ? 200 : 503).json({
+    ok: databaseConnected,
     api: true,
-    databaseConfigured: Boolean(process.env.DATABASE_URL),
+    databaseConfigured,
+    databaseConnected,
   })
 }

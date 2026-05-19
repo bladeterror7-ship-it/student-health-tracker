@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs'
-import type { RegisteredStudent } from '../../src/types'
+import { ensureSchema, getSql } from './db.js'
 
 const STUDENT_CLASS_OPTIONS = [
   '6-1',
@@ -13,9 +13,19 @@ const STUDENT_CLASS_OPTIONS = [
   '11-2',
   '12-1',
 ] as const
-import { ensureSchema, getSql } from './db'
 
 const SALT_ROUNDS = 10
+
+export type StudentRecord = {
+  id: string
+  fullName: string
+  lastName?: string
+  firstName?: string
+  classGroup: string
+  email: string
+  registeredAt: string
+  status: 'active' | 'inactive'
+}
 
 type StudentRow = {
   id: string
@@ -28,18 +38,24 @@ type StudentRow = {
   created_at: Date | string
 }
 
-function rowToStudent(row: StudentRow): RegisteredStudent {
+function rowToStudent(row: StudentRow): StudentRecord {
+  const created = row.created_at
+  let registeredAt = new Date().toISOString()
+  if (created instanceof Date) {
+    registeredAt = created.toISOString()
+  } else if (created) {
+    const d = new Date(created)
+    if (!Number.isNaN(d.getTime())) registeredAt = d.toISOString()
+  }
+
   return {
     id: String(row.id),
-    email: row.email.toLowerCase(),
+    email: String(row.email).toLowerCase(),
     fullName: row.full_name,
     lastName: row.last_name,
     firstName: row.first_name,
     classGroup: row.class_group,
-    registeredAt:
-      row.created_at instanceof Date
-        ? row.created_at.toISOString()
-        : new Date(row.created_at).toISOString(),
+    registeredAt,
     status: row.status === 'inactive' ? 'inactive' : 'active',
   }
 }
@@ -48,7 +64,7 @@ function isValidClass(c: string) {
   return (STUDENT_CLASS_OPTIONS as readonly string[]).includes(c)
 }
 
-export async function listStudents(): Promise<RegisteredStudent[]> {
+export async function listStudents(): Promise<StudentRecord[]> {
   await ensureSchema()
   const sql = getSql()
   const rows = (await sql`
@@ -65,7 +81,7 @@ export async function registerStudent(input: {
   lastName: string
   firstName: string
   classGroup: string
-}): Promise<{ ok: true; student: RegisteredStudent } | { ok: false; reason: string }> {
+}): Promise<{ ok: true; student: StudentRecord } | { ok: false; reason: string }> {
   const email = input.email.trim().toLowerCase()
   const lastName = input.lastName.trim()
   const firstName = input.firstName.trim()
@@ -107,7 +123,7 @@ export async function registerStudent(input: {
 export async function loginStudent(
   email: string,
   password: string,
-): Promise<{ ok: true; student: RegisteredStudent } | { ok: false; reason: string }> {
+): Promise<{ ok: true; student: StudentRecord } | { ok: false; reason: string }> {
   const id = email.trim().toLowerCase()
   if (!id || !password) {
     return { ok: false, reason: 'И-мэйл болон нууц үгээ оруулна уу' }
@@ -141,7 +157,7 @@ export async function loginStudent(
 
 export async function updateStudent(
   id: string,
-  patch: Partial<Pick<RegisteredStudent, 'fullName' | 'classGroup' | 'email' | 'status'>>,
+  patch: Partial<Pick<StudentRecord, 'fullName' | 'classGroup' | 'email' | 'status'>>,
 ): Promise<void> {
   await ensureSchema()
   const sql = getSql()

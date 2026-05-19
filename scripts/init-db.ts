@@ -1,4 +1,4 @@
-import { ensureSchema } from '../lib/server/db.js'
+import { ensureSchema } from '../api/_lib/db.js'
 
 async function main() {
   await ensureSchema()

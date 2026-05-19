@@ -1,13 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { parseJsonBody } from './_lib/body.js'
 import { applyCors, handleOptions } from './_lib/cors.js'
-import { registerStudent } from '../lib/server/students.js'
-
-export const config = {
-  api: {
-    bodyParser: true,
-  },
-}
+import { registerStudent } from './_lib/students.js'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   applyCors(res, 'POST, OPTIONS')
@@ -21,6 +15,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const body = parseJsonBody<{
       email?: string
       password?: string
+      lastname?: string
+      firstname?: string
+      classgroup?: string
       lastName?: string
       firstName?: string
       classGroup?: string
@@ -29,9 +26,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const result = await registerStudent({
       email: body.email ?? '',
       password: body.password ?? '',
-      lastName: body.lastName ?? '',
-      firstName: body.firstName ?? '',
-      classGroup: body.classGroup ?? '',
+      lastName: body.lastname ?? body.lastName ?? '',
+      firstName: body.firstname ?? body.firstName ?? '',
+      classGroup: body.classgroup ?? body.classGroup ?? '',
     })
 
     if (!result.ok) {
@@ -42,6 +39,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   } catch (error) {
     console.error('API register-student:', error)
     const message = error instanceof Error ? error.message : 'Server error'
-    return res.status(500).json({ ok: false, reason: message })
+    return res.status(500).json({ ok: false, reason: message, error: message })
   }
 }

@@ -11,7 +11,7 @@ import {
   loginStudent,
   registerStudent,
   updateStudent,
-} from '../lib/server/students.js'
+} from '../api/_lib/students.js'
 
 const app = express()
 const PORT = Number(process.env.API_PORT) || 3001

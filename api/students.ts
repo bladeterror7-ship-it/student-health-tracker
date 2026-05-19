@@ -1,10 +1,15 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
+import { parseJsonBody } from './_lib/body.js'
 import { applyCors, handleOptions } from './_lib/cors.js'
 import {
   deleteStudent,
   listStudents,
   updateStudent,
-} from '../lib/server/students.js'
+} from './_lib/students.js'
+
+function sendError(res: VercelResponse, status: number, message: string) {
+  return res.status(status).json({ ok: false, reason: message, error: message })
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   applyCors(res, 'GET, PATCH, DELETE, OPTIONS')
@@ -13,32 +18,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     if (req.method === 'GET') {
       const students = await listStudents()
-      return res.status(200).json({ students })
+      return res.status(200).json({ ok: true, students })
     }
 
     if (req.method === 'PATCH') {
-      const { id, patch } = req.body as {
-        id?: string
-        patch?: Record<string, unknown>
+      const body = parseJsonBody<{ id?: string; patch?: Record<string, unknown> }>(req)
+      if (!body.id || !body.patch) {
+        return sendError(res, 400, 'id болон patch шаардлагатай')
       }
-      if (!id || !patch) {
-        return res.status(400).json({ error: 'id болон patch шаардлагатай' })
-      }
-      await updateStudent(id, patch)
+      await updateStudent(body.id, body.patch)
       return res.status(200).json({ ok: true })
     }
 
     if (req.method === 'DELETE') {
-      const id = (req.query.id as string) || (req.body as { id?: string })?.id
-      if (!id) return res.status(400).json({ error: 'id шаардлагатай' })
+      const id =
+        (req.query.id as string) ||
+        parseJsonBody<{ id?: string }>(req).id
+      if (!id) return sendError(res, 400, 'id шаардлагатай')
       await deleteStudent(id)
       return res.status(200).json({ ok: true })
     }
 
-    return res.status(405).json({ error: 'Method not allowed' })
+    return sendError(res, 405, 'Method not allowed')
   } catch (error) {
     console.error('API /students:', error)
     const message = error instanceof Error ? error.message : 'Server error'
-    return res.status(500).json({ error: message })
+    return sendError(res, 500, message)
   }
 }

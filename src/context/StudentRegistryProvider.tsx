@@ -34,7 +34,7 @@ export function StudentRegistryProvider({ children }: { children: ReactNode }) {
     void reload()
     const onChange = () => void reload()
     window.addEventListener(STUDENT_REGISTRY_EVENT, onChange)
-    const interval = window.setInterval(() => void reload(), 15_000)
+    const interval = window.setInterval(() => void reload(), 60_000)
     return () => {
       window.removeEventListener(STUDENT_REGISTRY_EVENT, onChange)
       window.clearInterval(interval)

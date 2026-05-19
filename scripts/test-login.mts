@@ -1,4 +1,4 @@
-import { loginStudent, registerStudent } from '../lib/server/students.js'
+import { loginStudent, registerStudent } from '../api/_lib/students.js'
 
 async function main() {
   const email = `debug-${Date.now()}@test.mn`
