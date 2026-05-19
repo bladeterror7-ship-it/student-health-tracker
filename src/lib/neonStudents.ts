@@ -8,18 +8,25 @@ type ApiPayload = Record<string, unknown>
 
 async function readApiJson(res: Response): Promise<ApiPayload> {
   const text = await res.text()
-  if (!text.trim()) {
-    throw new Error('Сервер хоосон хариу буцаалаа')
+  const trimmed = text.trim()
+
+  if (!trimmed) {
+    throw new Error(`Сервер хоосон хариу буцаалаа (HTTP ${res.status})`)
   }
+
   try {
-    return JSON.parse(text) as ApiPayload
+    return JSON.parse(trimmed) as ApiPayload
   } catch {
-    if (text.trimStart().startsWith('<')) {
+    if (trimmed.startsWith('<')) {
       throw new Error(
-        'API ажиллахгүй байна. Vercel дээр DATABASE_URL тохируулсан эсэхээ шалгана уу.',
+        'API олдсонгүй. Vercel deploy дахин хийгээд /api/health шалгана уу.',
       )
     }
-    throw new Error('Серверийн хариу буруу байна')
+    if (trimmed.includes('NOT_FOUND') || trimmed.includes('DEPLOYMENT_NOT_FOUND')) {
+      throw new Error('API олдсонгүй — сайтаа дахин deploy хийнэ үү')
+    }
+    const preview = trimmed.slice(0, 80).replace(/\s+/g, ' ')
+    throw new Error(`Серверийн алдаа (${res.status}): ${preview}`)
   }
 }
 
@@ -32,7 +39,9 @@ function reasonFromPayload(data: ApiPayload, fallback: string): string {
 }
 
 export async function fetchStudentsFromApi(): Promise<RegisteredStudent[]> {
-  const res = await fetch(`${API_BASE}/api/students`)
+  const res = await fetch(`${API_BASE}/api/students`, {
+    headers: { Accept: 'application/json' },
+  })
   const data = await readApiJson(res)
   if (!res.ok) {
     throw new Error(reasonFromPayload(data, `HTTP ${res.status}`))
@@ -48,10 +57,19 @@ export async function registerStudentWithNeon(input: {
   classGroup: string
 }): Promise<{ ok: true; student: RegisteredStudent } | { ok: false; reason: string }> {
   try {
-    const res = await fetch(`${API_BASE}/api/auth/register-student`, {
+    const res = await fetch(`${API_BASE}/api/register-student`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(input),
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({
+        email: input.email.trim().toLowerCase(),
+        password: input.password,
+        lastName: input.lastName.trim(),
+        firstName: input.firstName.trim(),
+        classGroup: input.classGroup.trim(),
+      }),
     })
     const data = await readApiJson(res)
     if (!res.ok || data.ok !== true) {
@@ -78,10 +96,16 @@ export async function signInStudentWithNeon(
   { ok: true; profile: RegisteredStudent } | { ok: false; reason: string }
 > {
   try {
-    const res = await fetch(`${API_BASE}/api/auth/login-student`, {
+    const res = await fetch(`${API_BASE}/api/login-student`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({
+        email: email.trim().toLowerCase(),
+        password,
+      }),
     })
     const data = await readApiJson(res)
     if (!res.ok || data.ok !== true) {
@@ -108,7 +132,10 @@ export async function updateStudentInNeon(
 ): Promise<void> {
   const res = await fetch(`${API_BASE}/api/students`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
     body: JSON.stringify({ id, patch }),
   })
   const data = await readApiJson(res)
@@ -121,6 +148,7 @@ export async function updateStudentInNeon(
 export async function deleteStudentFromNeon(id: string): Promise<void> {
   const res = await fetch(`${API_BASE}/api/students?id=${encodeURIComponent(id)}`, {
     method: 'DELETE',
+    headers: { Accept: 'application/json' },
   })
   const data = await readApiJson(res)
   if (!res.ok) {

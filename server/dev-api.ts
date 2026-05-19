@@ -65,7 +65,7 @@ app.delete('/api/students', async (req, res) => {
   }
 })
 
-app.post('/api/auth/register-student', async (req, res) => {
+async function handleRegister(req: express.Request, res: express.Response) {
   try {
     const result = await registerStudent(req.body)
     if (!result.ok) {
@@ -80,9 +80,9 @@ app.post('/api/auth/register-student', async (req, res) => {
       reason: error instanceof Error ? error.message : 'Server error',
     })
   }
-})
+}
 
-app.post('/api/auth/login-student', async (req, res) => {
+async function handleLogin(req: express.Request, res: express.Response) {
   try {
     const result = await loginStudent(req.body.email ?? '', req.body.password ?? '')
     if (!result.ok) {
@@ -97,7 +97,12 @@ app.post('/api/auth/login-student', async (req, res) => {
       reason: error instanceof Error ? error.message : 'Server error',
     })
   }
-})
+}
+
+app.post('/api/register-student', handleRegister)
+app.post('/api/auth/register-student', handleRegister)
+app.post('/api/login-student', handleLogin)
+app.post('/api/auth/login-student', handleLogin)
 
 app.listen(PORT, () => {
   console.log(`API server http://localhost:${PORT}`)

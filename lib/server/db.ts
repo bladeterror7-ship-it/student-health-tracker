@@ -1,11 +1,16 @@
 import { neon } from '@neondatabase/serverless'
 
+function normalizeDatabaseUrl(url: string): string {
+  // channel_binding serverless дээр заримдаа асуудал үүсгэнэ
+  return url.replace(/([?&])channel_binding=[^&]*&?/g, '$1').replace(/[?&]$/, '')
+}
+
 export function getSql() {
-  const url = process.env.DATABASE_URL
-  if (!url) {
+  const raw = process.env.DATABASE_URL
+  if (!raw) {
     throw new Error('DATABASE_URL environment variable is not set')
   }
-  return neon(url)
+  return neon(normalizeDatabaseUrl(raw))
 }
 
 export async function ensureSchema() {

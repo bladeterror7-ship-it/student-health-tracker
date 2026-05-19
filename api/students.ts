@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
+import { applyCors, handleOptions } from './_lib/cors.js'
 import {
   deleteStudent,
   listStudents,
@@ -6,13 +7,8 @@ import {
 } from '../lib/server/students.js'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'GET, PATCH, DELETE, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
-
-  if (req.method === 'OPTIONS') {
-    return res.status(204).end()
-  }
+  applyCors(res, 'GET, PATCH, DELETE, OPTIONS')
+  if (handleOptions(req, res)) return
 
   try {
     if (req.method === 'GET') {

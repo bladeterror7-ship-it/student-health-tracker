@@ -1,18 +1,18 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { loginStudent } from '../../lib/server/students.js'
+import { parseJsonBody } from './_lib/body.js'
+import { applyCors, handleOptions } from './_lib/cors.js'
+import { loginStudent } from '../lib/server/students.js'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+  applyCors(res, 'POST, OPTIONS')
+  if (handleOptions(req, res)) return
 
-  if (req.method === 'OPTIONS') return res.status(204).end()
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'POST only' })
+    return res.status(405).json({ ok: false, reason: 'POST only' })
   }
 
   try {
-    const body = req.body as { email?: string; password?: string }
+    const body = parseJsonBody<{ email?: string; password?: string }>(req)
     const result = await loginStudent(body.email ?? '', body.password ?? '')
 
     if (!result.ok) {
