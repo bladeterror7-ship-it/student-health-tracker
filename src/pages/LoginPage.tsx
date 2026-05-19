@@ -18,9 +18,9 @@ import { useAuth } from '../context/useAuth'
 import { useStudentRegistry } from '../context/useStudentRegistry'
 import { dashboardPathForRole } from '../lib/authRedirect'
 import {
-  registerStudentWithFirebase,
-  signInStudentWithFirebase,
-} from '../lib/firebaseStudents'
+  registerStudentWithNeon,
+  signInStudentWithNeon,
+} from '../lib/neonStudents'
 import {
   authenticatePortalAccount,
   registerAdminAccount,
@@ -158,7 +158,7 @@ export default function LoginPage() {
 
     setSubmitting(true)
     try {
-      const auth = await signInStudentWithFirebase(loginId, loginPassword)
+      const auth = await signInStudentWithNeon(loginId, loginPassword)
       if (auth.ok === false) {
         toast.error(auth.reason)
         return
@@ -189,7 +189,7 @@ export default function LoginPage() {
     if (registerRole === 'student') {
       setSubmitting(true)
       try {
-        const res = await registerStudentWithFirebase({
+        const res = await registerStudentWithNeon({
           email: registerEmail,
           password: registerPassword,
           lastName,

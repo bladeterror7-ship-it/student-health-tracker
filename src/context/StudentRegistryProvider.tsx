@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import {
-  deleteStudentFromFirebase,
-  subscribeStudents,
-  updateStudentInFirebase,
-} from '../lib/firebaseStudents'
+  deleteStudentFromNeon,
+  fetchStudentsFromApi,
+  STUDENT_REGISTRY_EVENT,
+  updateStudentInNeon,
+} from '../lib/neonStudents'
 import { STUDENT_CLASS_OPTIONS, type RegisteredStudent } from '../types'
 import {
   StudentRegistryContext,
@@ -18,21 +19,28 @@ export function StudentRegistryProvider({ children }: { children: ReactNode }) {
   const [students, setStudents] = useState<RegisteredStudent[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const unsub = subscribeStudents(
-      (rows) => {
-        setStudents(rows)
-        setLoading(false)
-      },
-      (error) => {
-        console.error('Firestore students sync:', error)
-        setLoading(false)
-      },
-    )
-    return unsub
+  const reload = useCallback(async () => {
+    try {
+      const rows = await fetchStudentsFromApi()
+      setStudents(rows)
+    } catch (error) {
+      console.error('Neon students sync:', error)
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
-  /** Firebase бүртгэл LoginPage дээр шууд хийгдэнэ — энд зөвхөн validation. */
+  useEffect(() => {
+    void reload()
+    const onChange = () => void reload()
+    window.addEventListener(STUDENT_REGISTRY_EVENT, onChange)
+    const interval = window.setInterval(() => void reload(), 15_000)
+    return () => {
+      window.removeEventListener(STUDENT_REGISTRY_EVENT, onChange)
+      window.clearInterval(interval)
+    }
+  }, [reload])
+
   const registerStudent = useCallback((input: RegisterStudentInput) => {
     const email = input.email.trim().toLowerCase()
     const classGroup = input.classGroup.trim()
@@ -61,8 +69,7 @@ export function StudentRegistryProvider({ children }: { children: ReactNode }) {
     (_identifier: string, _password: string) => {
       return {
         ok: false as const,
-        reason:
-          'Сурагчийн нэвтрэлт Firebase-ээр хийгдэнэ — и-мэйлээ ашиглана уу',
+        reason: 'Сурагчийн нэвтрэлт серверээр (Neon DB) хийгдэнэ',
       }
     },
     [],
@@ -79,16 +86,16 @@ export function StudentRegistryProvider({ children }: { children: ReactNode }) {
         patch.classGroup !== undefined ? patch.classGroup.trim() : undefined
       if (classGroup !== undefined && !isValidClass(classGroup)) return
 
-      void updateStudentInFirebase(id, patch).catch((error) => {
-        console.error('Firestore update student:', error)
+      void updateStudentInNeon(id, patch).catch((error) => {
+        console.error('Neon update student:', error)
       })
     },
     [],
   )
 
   const deleteStudent = useCallback((id: string) => {
-    void deleteStudentFromFirebase(id).catch((error) => {
-      console.error('Firestore delete student:', error)
+    void deleteStudentFromNeon(id).catch((error) => {
+      console.error('Neon delete student:', error)
     })
   }, [])
 
