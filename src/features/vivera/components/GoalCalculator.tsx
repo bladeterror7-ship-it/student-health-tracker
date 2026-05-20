@@ -8,6 +8,7 @@ type Props = {
   activityId: ActivityLevelId
   dailyGoalMl: number
   onChange: (next: { weightKg: number; activityId: ActivityLevelId }) => void
+  readOnly?: boolean
 }
 
 export default function GoalCalculator({
@@ -15,6 +16,7 @@ export default function GoalCalculator({
   activityId,
   dailyGoalMl,
   onChange,
+  readOnly = false,
 }: Props) {
   return (
     <motion.section
@@ -56,7 +58,8 @@ export default function GoalCalculator({
                 activityId,
               })
             }
-            className="w-full rounded-xl border border-slate-200 bg-vivera-surface px-3 py-2.5 text-sm font-medium text-slate-900 outline-none ring-vivera-primary/0 transition focus:border-vivera-primary/50 focus:ring-2 focus:ring-vivera-primary/20"
+            disabled={readOnly}
+            className="w-full rounded-xl border border-slate-200 bg-vivera-surface px-3 py-2.5 text-sm font-medium text-slate-900 outline-none ring-vivera-primary/0 transition focus:border-vivera-primary/50 focus:ring-2 focus:ring-vivera-primary/20 disabled:opacity-70"
           />
         </label>
         <label className="block text-left">
@@ -71,7 +74,8 @@ export default function GoalCalculator({
                 activityId: e.target.value as ActivityLevelId,
               })
             }
-            className="w-full rounded-xl border border-slate-200 bg-vivera-surface px-3 py-2.5 text-sm font-medium text-slate-900 outline-none focus:border-vivera-primary/50 focus:ring-2 focus:ring-vivera-primary/20"
+            disabled={readOnly}
+            className="w-full rounded-xl border border-slate-200 bg-vivera-surface px-3 py-2.5 text-sm font-medium text-slate-900 outline-none focus:border-vivera-primary/50 focus:ring-2 focus:ring-vivera-primary/20 disabled:opacity-70"
           >
             {ACTIVITY_OPTIONS.map((a) => (
               <option key={a.id} value={a.id}>

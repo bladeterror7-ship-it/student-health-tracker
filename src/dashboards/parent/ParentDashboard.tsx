@@ -11,6 +11,8 @@ import {
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useAuth } from '../../context/useAuth'
+import { useStudentRegistry } from '../../context/useStudentRegistry'
+import { ViveraDashboard } from '../../features/vivera'
 import { useMedicalData } from '../../hooks/useMedicalData'
 
 type BmiBand = 'under' | 'normal' | 'over' | 'obese'
@@ -54,7 +56,14 @@ const bandLabels: Record<
 
 export default function ParentDashboard() {
   const { session } = useAuth()
+  const { students } = useStudentRegistry()
   const { getProfileResolved } = useMedicalData()
+
+  const linkedChild = useMemo(() => {
+    if (!session?.linkedStudentId) return null
+    return students.find((s) => s.id === session.linkedStudentId) ?? null
+  }, [students, session?.linkedStudentId])
+
   const childProfile = session?.linkedStudentId
     ? getProfileResolved(session.linkedStudentId)
     : null
@@ -197,6 +206,22 @@ export default function ParentDashboard() {
           </motion.div>
         </motion.section>
       )}
+
+      {linkedChild ? (
+        <ViveraDashboard
+          subjectEmail={linkedChild.email}
+          childName={linkedChild.fullName}
+          readOnly
+        />
+      ) : session?.role === 'parent' ? (
+        <section className="rounded-2xl border border-vivera-primary/20 bg-vivera-surface/80 p-4 text-sm text-slate-600">
+          <p className="font-semibold text-slate-900">💧 Vivera Усны Төсөл</p>
+          <p className="mt-1">
+            Хүүхдийн усны мэдээлэл харахын тулд бүртгэлд хүүхдийн и-мэйл эсвэл
+            нэрийг зөв оруулсан эсэхийг шалгана уу.
+          </p>
+        </section>
+      ) : null}
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,380px)_1fr]">
         <motion.section

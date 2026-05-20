@@ -1,4 +1,5 @@
 export { default as ViveraDashboard } from './components/ViveraDashboard'
+export type { ViveraDashboardProps } from './components/ViveraDashboard'
 export { default as GoalCalculator } from './components/GoalCalculator'
 export { default as HealthTips } from './components/HealthTips'
 export { default as PlantTracker } from './components/PlantTracker'

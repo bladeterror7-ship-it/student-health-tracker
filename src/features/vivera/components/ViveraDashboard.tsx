@@ -11,9 +11,22 @@ import PlantTracker from './PlantTracker'
 import WaterFillMeter from './WaterFillMeter'
 import WeeklyStats from './WeeklyStats'
 
-export default function ViveraDashboard() {
+export type ViveraDashboardProps = {
+  /** Сурагчийн и-мэйл — эцэг эх хүүхдийнхийг харах үед */
+  subjectEmail?: string
+  /** Хүүхдийн нэр (эцэг эхийн харагдац) */
+  childName?: string
+  /** Зөвхөн харах — ус нэмэх, reset хориглоно */
+  readOnly?: boolean
+}
+
+export default function ViveraDashboard({
+  subjectEmail: subjectEmailProp,
+  childName,
+  readOnly = false,
+}: ViveraDashboardProps = {}) {
   const { session } = useAuth()
-  const email = session?.email
+  const email = subjectEmailProp ?? session?.email
 
   const {
     intakeMl,
@@ -41,15 +54,17 @@ export default function ViveraDashboard() {
             className="bg-gradient-to-r from-vivera-primary to-vivera-secondary bg-clip-text text-lg font-bold tracking-tight text-transparent sm:text-xl"
           >
             💧 Vivera Усны Төсөл
+            {readOnly && childName ? ` — ${childName}` : ''}
           </motion.h3>
           <p className="mt-1 max-w-xl text-sm text-slate-600">
-            Эрүүл мэндийн хэрэгцээнд нийцсэн ус уух зуршил — зорилтоо тохируулж,
-            ургамалаа ургуул.
+            {readOnly
+              ? 'Хүүхдийнхээ өдөр тутмын ус уух зорилт, ургамлын өсөлт болон 7 хоногийн статистикийг хянаарай.'
+              : 'Эрүүл мэндийн хэрэгцээнд нийцсэн ус уух зуршил — зорилтоо тохируулж, ургамалаа ургуул.'}
           </p>
         </div>
         <div className="rounded-2xl border border-vivera-primary/20 bg-white px-4 py-2.5 text-right shadow-sm">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-            Өнөөдөр
+            {readOnly ? 'Хүүхдийн өнөөдөр' : 'Өнөөдөр'}
           </p>
           <p className="text-xl font-bold tabular-nums text-vivera-primary">
             {intakeMl}
@@ -63,7 +78,10 @@ export default function ViveraDashboard() {
       </header>
 
       <div className="mb-4">
-        <HydrationWarning open={showHydrationWarning} onDismiss={dismissWarning} />
+        <HydrationWarning
+          open={!readOnly && showHydrationWarning}
+          onDismiss={dismissWarning}
+        />
       </div>
 
       <div className="grid gap-5 lg:grid-cols-12">
@@ -78,33 +96,40 @@ export default function ViveraDashboard() {
             <div className="rounded-2xl border border-vivera-primary/10 bg-white p-3.5 text-sm leading-relaxed shadow-sm">
               <p className="font-semibold text-vivera-primary">Vivera төсөл</p>
               <p className="mt-1.5 text-xs leading-relaxed text-slate-600">
-                Сургуулийн ухаалаг усан цэнэглэгчээр цэвэр ус уух, эко хэрэглээг
-                хэвшүүл. Өдөр бүр жижиг алхмаар зорилтодоо хүр.
+                {readOnly
+                  ? 'Сурагч сургуулийн Vivera цэнэглэгчээр ус ууж, зорилтоо биелүүлж байгаа явцыг эндээс харна.'
+                  : 'Сургуулийн ухаалаг усан цэнэглэгчээр цэвэр ус уух, эко хэрэглээг хэвшүүл. Өдөр бүр жижиг алхмаар зорилтодоо хүр.'}
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-2">
-              {ADD_BUTTONS.map(({ ml, label, sub }) => (
-                <button
-                  key={ml}
-                  type="button"
-                  onClick={() => addWater(ml)}
-                  className="inline-flex min-w-[130px] flex-1 items-center justify-center gap-1 rounded-xl bg-gradient-to-r from-vivera-primary to-vivera-secondary px-3 py-2.5 text-sm font-semibold text-white shadow-md transition hover:brightness-105 active:scale-[0.98]"
-                >
-                  {label}
-                  <span className="text-[10px] font-medium opacity-90">({sub})</span>
-                </button>
-              ))}
-            </div>
+            {!readOnly && (
+              <>
+                <div className="flex flex-wrap gap-2">
+                  {ADD_BUTTONS.map(({ ml, label, sub }) => (
+                    <button
+                      key={ml}
+                      type="button"
+                      onClick={() => addWater(ml)}
+                      className="inline-flex min-w-[130px] flex-1 items-center justify-center gap-1 rounded-xl bg-gradient-to-r from-vivera-primary to-vivera-secondary px-3 py-2.5 text-sm font-semibold text-white shadow-md transition hover:brightness-105 active:scale-[0.98]"
+                    >
+                      {label}
+                      <span className="text-[10px] font-medium opacity-90">
+                        ({sub})
+                      </span>
+                    </button>
+                  ))}
+                </div>
 
-            <button
-              type="button"
-              onClick={resetDay}
-              className="inline-flex w-fit items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50"
-            >
-              <RotateCcw className="size-3.5" aria-hidden />
-              Өнөөдрийг шинэчлэх
-            </button>
+                <button
+                  type="button"
+                  onClick={resetDay}
+                  className="inline-flex w-fit items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50"
+                >
+                  <RotateCcw className="size-3.5" aria-hidden />
+                  Өнөөдрийг шинэчлэх
+                </button>
+              </>
+            )}
           </div>
         </div>
 
@@ -118,6 +143,7 @@ export default function ViveraDashboard() {
             activityId={activityId}
             dailyGoalMl={dailyGoalMl}
             onChange={updateProfile}
+            readOnly={readOnly}
           />
         </div>
 
