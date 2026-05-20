@@ -9,6 +9,7 @@ import HealthTips from './HealthTips'
 import HydrationWarning from './HydrationWarning'
 import PlantTracker from './PlantTracker'
 import WaterFillMeter from './WaterFillMeter'
+import WeeklyStats from './WeeklyStats'
 
 export default function ViveraDashboard() {
   const { session } = useAuth()
@@ -122,6 +123,14 @@ export default function ViveraDashboard() {
 
         <div className="lg:col-span-6">
           <HealthTips />
+        </div>
+
+        <div className="lg:col-span-12">
+          <WeeklyStats
+            email={email}
+            dailyGoalMl={dailyGoalMl}
+            todayIntakeMl={intakeMl}
+          />
         </div>
       </div>
     </section>

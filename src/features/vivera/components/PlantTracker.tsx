@@ -20,7 +20,7 @@ export default function PlantTracker({ progressPercent }: Props) {
         id="vivera-plant-heading"
         className="text-sm font-semibold text-slate-900"
       >
-        Усны ургамал
+        🌱 Миний Vivera ургамал
       </h4>
       <p className="mb-3 text-[11px] text-slate-500">
         Зорилтодоо хүрэх тусам ургана

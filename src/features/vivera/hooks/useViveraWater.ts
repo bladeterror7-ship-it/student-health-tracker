@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ActivityLevelId } from '../constants'
 import { calculateDailyGoalMl } from '../utils/goalCalculator'
+import { saveWaterHistoryEntry } from '../utils/waterHistory'
 
 const STORAGE_PREFIX = 'vivera-water-v2:'
 
@@ -32,11 +33,13 @@ function loadDay(email: string): number {
 }
 
 function persistDay(email: string, ml: number) {
+  const key = todayKey()
   try {
     localStorage.setItem(
       storageKey(email, 'day'),
-      JSON.stringify({ dateKey: todayKey(), ml } satisfies StoredDay),
+      JSON.stringify({ dateKey: key, ml } satisfies StoredDay),
     )
+    saveWaterHistoryEntry(email, key, ml)
   } catch {
     /* quota */
   }
