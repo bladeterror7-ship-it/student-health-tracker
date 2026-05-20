@@ -4,6 +4,7 @@ import {
   Bell,
   Brain,
   ChevronRight,
+  Droplets,
   HeartPulse,
   NotebookPen,
   Stethoscope,
@@ -19,7 +20,7 @@ import StudentMedicalAskDoctor from './StudentMedicalAskDoctor'
 import StudentPeActivitySection from './StudentPeActivitySection.tsx'
 import StudentPsychBreathing from './StudentPsychBreathing'
 import StudentPsychResources from './StudentPsychResources'
-import StudentViveraWaterTracker from './StudentViveraWaterTracker'
+import { ViveraDashboard } from '../../features/vivera'
 import StudentPsychGratitude, {
   type PsychJournalEntry,
 } from './StudentPsychGratitude'
@@ -35,7 +36,7 @@ import StudentPsychMoodPicker, {
 import StudentPsychMoodWeekChart from './StudentPsychMoodWeekChart.tsx'
 import StudentPsychSessionBooking from './StudentPsychSessionBooking'
 
-type TabId = 'medical' | 'psych' | 'pe'
+type TabId = 'medical' | 'psych' | 'pe' | 'vivera'
 
 const tabs: {
   id: TabId
@@ -61,7 +62,23 @@ const tabs: {
     subtitle: 'Идэвх & оноо',
     icon: Activity,
   },
+  {
+    id: 'vivera',
+    label: 'Усны төсөл',
+    subtitle: 'Vivera',
+    icon: Droplets,
+  },
 ]
+
+const tabPanelClass: Record<TabId, string> = {
+  medical:
+    'border-emerald-200/70 bg-gradient-to-b from-emerald-50/80 to-white/70 dark:border-emerald-500/25 dark:from-emerald-950/40 dark:to-slate-950/45',
+  psych:
+    'border-violet-200/70 bg-gradient-to-b from-violet-50/80 to-white/70 dark:border-violet-500/25 dark:from-violet-950/35 dark:to-slate-950/45',
+  pe: 'border-orange-200/70 bg-gradient-to-b from-orange-50/80 to-white/70 dark:border-orange-500/25 dark:from-orange-950/35 dark:to-slate-950/45',
+  vivera:
+    'border-sky-200/70 bg-vivera-surface dark:border-sky-500/25 dark:from-sky-950/30 dark:to-slate-950/45',
+}
 
 const PSYCH_DEFAULT_ADVICE_TEXT =
   'Богино амралтаа төлөвлөж, ахицаа бичээрэй — сэтгэл зүйчтэй хуваалцахад тустай.'
@@ -185,21 +202,11 @@ export default function StudentDashboard() {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-600/90 dark:text-emerald-300/85">
-            Сурагчийн самбар
-          </p>
-          <h2 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
-            Өдрийн ажиглалт & төлөвлөгөө
-          </h2>
-          <p className="mt-1 max-w-xl text-sm text-slate-600 dark:text-emerald-100/70">
-            Эмч, сэтгэл зүйч, биеийн тамирын мэдээллийг нэг дороос хянаарай.
-          </p>
-        </div>
-      </header>
-
-      <div className="flex gap-2 overflow-x-auto rounded-2xl border border-white/40 bg-white/55 p-1 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-white/5">
+      <div
+        className="flex gap-2 overflow-x-auto rounded-2xl border border-white/40 bg-white/55 p-1 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-white/5"
+        role="tablist"
+        aria-label="Сурагчийн хэсгүүд"
+      >
         {tabs.map((t) => {
           const Icon = t.icon
           const active = tab === t.id
@@ -208,11 +215,15 @@ export default function StudentDashboard() {
             <button
               key={t.id}
               type="button"
+              role="tab"
+              aria-selected={active}
+              aria-controls={`student-panel-${t.id}`}
+              id={`student-tab-${t.id}`}
               onClick={() => {
                 setTab(t.id)
                 if (t.id === 'psych') markReadByType('psychology')
               }}
-              className={`relative flex min-w-[140px] flex-1 items-center gap-3 rounded-xl px-3 py-2.5 text-left transition ${
+              className={`relative flex min-w-[120px] flex-1 items-center gap-2.5 rounded-xl px-2.5 py-2.5 text-left transition sm:min-w-[130px] sm:gap-3 sm:px-3 ${
                 active
                   ? 'text-slate-900 dark:text-white'
                   : 'text-slate-500 hover:text-slate-800 dark:text-emerald-100/55 dark:hover:text-white'
@@ -245,14 +256,16 @@ export default function StudentDashboard() {
         })}
       </div>
 
-
-      <StudentViveraWaterTracker />
-      <div className="relative min-h-0 rounded-3xl border border-white/50 bg-white/70 p-5 shadow-xl shadow-orange-950/5 backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/45 dark:shadow-black/40 sm:p-7">
+      <div
+        id={`student-panel-${tab}`}
+        role="tabpanel"
+        aria-labelledby={`student-tab-${tab}`}
+        className={`relative min-h-0 rounded-3xl border p-5 shadow-xl backdrop-blur-2xl sm:p-7 ${tabPanelClass[tab]}`}
+      >
         <motion.div
           key={tab}
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.28 }}
           className="space-y-5"
         >
@@ -492,6 +505,8 @@ export default function StudentDashboard() {
           )}
 
           {tab === 'pe' && <StudentPeActivitySection />}
+
+          {tab === 'vivera' && <ViveraDashboard embedded />}
         </motion.div>
       </div>
     </div>

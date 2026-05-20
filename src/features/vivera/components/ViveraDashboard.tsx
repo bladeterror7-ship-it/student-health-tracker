@@ -18,12 +18,15 @@ export type ViveraDashboardProps = {
   childName?: string
   /** Зөвхөн харах — ус нэмэх, reset хориглоно */
   readOnly?: boolean
+  /** Таб дотор — давхар хүрээ/сүүдэргүй */
+  embedded?: boolean
 }
 
 export default function ViveraDashboard({
   subjectEmail: subjectEmailProp,
   childName,
   readOnly = false,
+  embedded = false,
 }: ViveraDashboardProps = {}) {
   const { session } = useAuth()
   const email = subjectEmailProp ?? session?.email
@@ -45,7 +48,13 @@ export default function ViveraDashboard({
   if (!email) return null
 
   return (
-    <section className="overflow-hidden rounded-3xl border border-vivera-primary/20 bg-vivera-surface p-4 shadow-lg sm:p-6">
+    <section
+      className={
+        embedded
+          ? 'space-y-5'
+          : 'overflow-hidden rounded-3xl border border-vivera-primary/20 bg-vivera-surface p-4 shadow-lg sm:p-6'
+      }
+    >
       <header className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 text-left">
           <motion.h3
