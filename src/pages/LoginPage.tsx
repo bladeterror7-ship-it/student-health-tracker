@@ -32,11 +32,6 @@ type AuthTab = 'login' | 'register'
 const TEAL = '#00BFA5'
 const TEAL_HOVER = '#00a693'
 
-const STAFF_HINT: { role: UserRole; label: string; email: string }[] = [
-  { role: 'admin', label: 'Админ', email: 'admin@school.edu.mn' },
-  { role: 'parent', label: 'Эцэг эх', email: 'parent@school.edu.mn' },
-]
-
 const REGISTER_ROLES: {
   id: UserRole
   label: string
@@ -53,9 +48,6 @@ export default function LoginPage() {
 
   const [tab, setTab] = useState<AuthTab>('login')
   const [showSuccess, setShowSuccess] = useState(false)
-  const [staffOpen, setStaffOpen] = useState(false)
-  const [staffRole, setStaffRole] = useState<UserRole>('admin')
-
   const [registerRole, setRegisterRole] = useState<UserRole>('student')
   const [loginRole, setLoginRole] = useState<UserRole>('student')
 
@@ -94,44 +86,8 @@ export default function LoginPage() {
     return <Navigate to={dashboardPathForRole(session.role)} replace />
   }
 
-  function tryStaffLogin(identifier: string, password: string): boolean {
-    const id = identifier.trim().toLowerCase()
-    if (!password) return false
-
-    const adminHit =
-      staffRole === 'admin' &&
-      (id.includes('admin') || id === 'admin@school.edu.mn')
-    const parentHit =
-      staffRole === 'parent' &&
-      (id.includes('parent') || id === 'parent@school.edu.mn')
-
-    if (adminHit) {
-      login({
-        role: 'admin',
-        email: id.includes('@') ? id : 'admin@school.edu.mn',
-        password,
-        displayName: 'Админ',
-      })
-      navigateAfterLogin('admin')
-      return true
-    }
-    if (parentHit) {
-      login({
-        role: 'parent',
-        email: id.includes('@') ? id : 'parent@school.edu.mn',
-        password,
-        displayName: 'Эцэг эх',
-      })
-      navigateAfterLogin('parent')
-      return true
-    }
-    return false
-  }
-
   async function handleLogin(e: FormEvent) {
     e.preventDefault()
-
-    if (staffOpen && tryStaffLogin(loginId, loginPassword)) return
 
     const id = loginId.trim()
     const password = loginPassword
@@ -387,10 +343,7 @@ export default function LoginPage() {
                         type="button"
                         role="tab"
                         aria-selected={active}
-                        onClick={() => {
-                          setTab(id)
-                          setStaffOpen(false)
-                        }}
+                        onClick={() => setTab(id)}
                         className={`relative rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${
                           active
                             ? 'text-white'
@@ -452,34 +405,6 @@ export default function LoginPage() {
                         </motion.div>
                       </div>
 
-                      {staffOpen && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          className="overflow-hidden"
-                        >
-                          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-white/45">
-                            Багшийн эрх (туршилт)
-                          </p>
-                          <motion.div layout className="mb-3 flex gap-2">
-                            {STAFF_HINT.map((s) => (
-                              <button
-                                key={s.role}
-                                type="button"
-                                onClick={() => setStaffRole(s.role)}
-                                className={`flex-1 rounded-xl border px-2 py-2 text-xs font-semibold transition ${
-                                  staffRole === s.role
-                                    ? 'border-teal-400/50 bg-teal-500/20 text-white'
-                                    : 'border-white/10 bg-black/20 text-white/60 hover:text-white'
-                                }`}
-                              >
-                                {s.label}
-                              </button>
-                            ))}
-                          </motion.div>
-                        </motion.div>
-                      )}
-
                       <label className="block space-y-1.5">
                         <span className="text-xs font-medium text-emerald-50/85">
                           {loginRole === 'student'
@@ -516,7 +441,7 @@ export default function LoginPage() {
                             autoComplete="current-password"
                           />
                         </span>
-                        {loginRole === 'student' && !staffOpen && (
+                        {loginRole === 'student' && (
                           <p className="text-[11px] leading-relaxed text-emerald-50/70">
                             Нууц үг мартсан бол сургуулийн админд хандана уу — админ
                             таны бүртгэлд шинэ нууц үг тохируулна (мэдээлэл устахгүй).
@@ -782,19 +707,6 @@ export default function LoginPage() {
                   )}
                 </AnimatePresence>
 
-                {tab === 'login' && (
-                  <div className="mt-5 border-t border-white/10 pt-4 text-center">
-                    <button
-                      type="button"
-                      onClick={() => setStaffOpen((o) => !o)}
-                      className="text-xs font-medium text-white/45 transition hover:text-teal-300"
-                    >
-                      {staffOpen
-                        ? 'Сурагчийн нэвтрэлт рүү буцах'
-                        : 'Админ / Эцэг эх нэвтрэх'}
-                    </button>
-                  </div>
-                )}
               </motion.div>
             )}
           </AnimatePresence>
