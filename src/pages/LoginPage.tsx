@@ -275,9 +275,6 @@ export default function LoginPage() {
             <Sparkles className="size-4 text-teal-300" aria-hidden />
             Physical Education
           </motion.div>
-          <h1 className="bg-gradient-to-r from-white via-teal-100 to-emerald-100 bg-clip-text text-3xl font-semibold tracking-tight text-transparent sm:text-4xl">
-            Сургуулийн портал
-          </h1>
           <p className="mt-2 text-sm text-emerald-100/75">
             Нэвтрэх эсвэл шинээр бүртгүүлнэ үү
           </p>
