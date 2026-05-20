@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import PsychAdminBell from './PsychAdminBell'
 import StudentNotificationBell from './StudentNotificationBell'
 import { useAuth } from '../context/useAuth'
+import { APP_NAME } from '../lib/appBrand'
 import { formatSessionGreeting } from '../lib/sessionGreeting'
 import type { UserRole } from '../types'
 
@@ -50,8 +51,8 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
               <ShieldCheck className="size-6" aria-hidden />
             </motion.div>
             <div className="text-left">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-700 dark:text-emerald-300">
-                Physical Education
+              <p className="text-[10px] font-semibold uppercase leading-snug tracking-[0.14em] text-emerald-700 sm:text-[11px] sm:tracking-[0.18em] dark:text-emerald-300">
+                {APP_NAME}
               </p>
               <p className="text-lg font-semibold leading-tight text-slate-900 dark:text-white">
                 {formatSessionGreeting(session)}

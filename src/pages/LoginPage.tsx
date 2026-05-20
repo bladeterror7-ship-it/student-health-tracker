@@ -25,6 +25,7 @@ import {
   registerParentWithNeon,
   signInPortalWithNeon,
 } from '../lib/neonPortal'
+import { APP_NAME } from '../lib/appBrand'
 import { STUDENT_CLASS_OPTIONS, type UserRole } from '../types'
 
 type AuthTab = 'login' | 'register'
@@ -270,10 +271,10 @@ export default function LoginPage() {
             initial={{ scale: 0.92 }}
             animate={{ scale: 1 }}
             transition={{ type: 'spring', stiffness: 200, damping: 18 }}
-            className="mx-auto mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-1.5 text-sm font-medium text-emerald-100/95 backdrop-blur-md"
+            className="mx-auto mb-4 inline-flex max-w-full items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-100/95 backdrop-blur-md sm:px-4 sm:text-xs"
           >
-            <Sparkles className="size-4 text-teal-300" aria-hidden />
-            Physical Education
+            <Sparkles className="size-4 shrink-0 text-teal-300" aria-hidden />
+            <span className="text-center leading-tight">{APP_NAME}</span>
           </motion.div>
           <p className="mt-2 text-sm text-emerald-100/75">
             Нэвтрэх эсвэл шинээр бүртгүүлнэ үү
