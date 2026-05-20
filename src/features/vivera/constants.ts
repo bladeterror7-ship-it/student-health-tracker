@@ -53,8 +53,8 @@ export const ADD_BUTTONS = [
 
 export const PLANT_STAGES = [
   { minPercent: 0, label: 'Үр', emoji: '🌰' },
-  { minPercent: 25, label: 'Өлс', emoji: '🌱' },
+  { minPercent: 25, label: 'Соёолж байна', emoji: '🌱' },
   { minPercent: 50, label: 'Өсөж буй', emoji: '🪴' },
-  { minPercent: 75, label: 'Цэцэглэх гэж', emoji: '🌿' },
+  { minPercent: 75, label: 'Цэцэглэх гэж байна', emoji: '🌿' },
   { minPercent: 100, label: 'Цэцэглэсэн', emoji: '🌸' },
 ] as const
