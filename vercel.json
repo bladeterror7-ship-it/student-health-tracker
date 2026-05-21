@@ -8,14 +8,6 @@
   },
   "rewrites": [
     {
-      "source": "/api/auth/login-student",
-      "destination": "/api/login-student"
-    },
-    {
-      "source": "/api/auth/register-student",
-      "destination": "/api/register-student"
-    },
-    {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
