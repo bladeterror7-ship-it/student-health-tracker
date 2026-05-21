@@ -9,6 +9,7 @@ export type PortalAccount = {
   displayName: string
   linkedStudentId?: string
   linkedStudentName?: string
+  status?: 'active' | 'inactive'
   registeredAt: string
 }
 
@@ -107,6 +108,46 @@ export async function registerAdminWithNeon(input: {
       ok: false,
       reason: error instanceof Error ? error.message : 'Серверт холбогдож чадсангүй',
     }
+  }
+}
+
+function accountFromListItem(raw: unknown): PortalAccount | null {
+  if (!raw || typeof raw !== 'object') return null
+  const a = raw as PortalAccount
+  if (!a.id || !a.email || !a.role) return null
+  return a
+}
+
+export async function fetchPortalAccountsFromApi(
+  role?: 'parent' | 'admin',
+): Promise<PortalAccount[]> {
+  const qs = role ? `?role=${encodeURIComponent(role)}` : ''
+  const res = await fetch(`${API_BASE}/api/portal-accounts${qs}`, {
+    headers: { Accept: 'application/json' },
+  })
+  const data = await readApiJson(res)
+  if (!res.ok) {
+    throw new Error(reasonFromPayload(data, 'Эцэг эхийн жагсаалт ачаалахад алдаа'))
+  }
+  const raw = data.accounts
+  if (!Array.isArray(raw)) return []
+  return raw
+    .map((item) => accountFromListItem(item))
+    .filter((a): a is PortalAccount => a !== null)
+}
+
+export async function resetPortalPasswordInNeon(
+  id: string,
+  newPassword: string,
+): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/reset-portal-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({ id, newPassword }),
+  })
+  const data = await readApiJson(res)
+  if (!res.ok || data.ok !== true) {
+    throw new Error(reasonFromPayload(data, 'Нууц үг сэргээхэд алдаа'))
   }
 }
 

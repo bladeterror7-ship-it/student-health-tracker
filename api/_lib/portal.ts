@@ -15,6 +15,7 @@ export type PortalAccountRecord = {
   displayName: string
   linkedStudentId?: string
   linkedStudentName?: string
+  status: 'active' | 'inactive'
   registeredAt: string
 }
 
@@ -54,8 +55,33 @@ function rowToPortal(row: PortalRow): PortalAccountRecord {
     ...(row.linked_student_name
       ? { linkedStudentName: row.linked_student_name }
       : {}),
+    status: row.status === 'inactive' ? 'inactive' : 'active',
     registeredAt,
   }
+}
+
+export async function listPortalAccounts(
+  role?: PortalRole,
+): Promise<PortalAccountRecord[]> {
+  await ensureSchema()
+  const sql = getSql()
+
+  const rows = role
+    ? ((await sql`
+        SELECT id, role, email, last_name, first_name, display_name,
+          linked_student_id, linked_student_name, status, created_at
+        FROM portal_accounts
+        WHERE role = ${role}
+        ORDER BY created_at DESC
+      `) as PortalRow[])
+    : ((await sql`
+        SELECT id, role, email, last_name, first_name, display_name,
+          linked_student_id, linked_student_name, status, created_at
+        FROM portal_accounts
+        ORDER BY created_at DESC
+      `) as PortalRow[])
+
+  return rows.map(rowToPortal)
 }
 
 async function findStudentByRef(ref: string) {

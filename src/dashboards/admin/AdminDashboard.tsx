@@ -14,6 +14,7 @@ import { type FormEvent, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import AdminDoctorInbox from './AdminDoctorInbox'
 import AdminPsychologistPanel from './AdminPsychologistPanel'
+import AdminRegisteredParents from './AdminRegisteredParents'
 import AdminRegisteredStudents from './AdminRegisteredStudents'
 import AdminTutorialVideosPanel from './AdminTutorialVideosPanel'
 import { useTutorialManifest } from '../../hooks/useTutorialManifest'
@@ -358,6 +359,7 @@ export default function AdminDashboard() {
       </header>
 
       <AdminRegisteredStudents />
+      <AdminRegisteredParents />
 
       <div className="flex gap-2 overflow-x-auto rounded-2xl border border-white/45 bg-white/60 p-1 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-white/5">
         {tabMeta.map((t) => {

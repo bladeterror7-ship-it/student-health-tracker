@@ -23,13 +23,32 @@ import {
   resetStudentPassword,
   updateStudent,
 } from '../api/_lib/students.js'
-import { resetPortalPassword } from '../api/_lib/portal.js'
+import {
+  listPortalAccounts,
+  resetPortalPassword,
+} from '../api/_lib/portal.js'
 
 const app = express()
 const PORT = Number(process.env.API_PORT) || 3001
 
 app.use(cors())
 app.use(express.json())
+
+app.get('/api/portal-accounts', async (req, res) => {
+  try {
+    const roleRaw = req.query.role as string | undefined
+    const role =
+      roleRaw === 'admin' || roleRaw === 'parent' ? roleRaw : undefined
+    const accounts = await listPortalAccounts(role)
+    res.json({ ok: true, accounts })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({
+      ok: false,
+      reason: error instanceof Error ? error.message : 'Server error',
+    })
+  }
+})
 
 app.get('/api/students', async (_req, res) => {
   try {
