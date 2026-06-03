@@ -1,4 +1,5 @@
 import { DENTAL_TEETH } from './dentalChart'
+import { formatBloodPressure, formatPulse } from './vitalsHelpers'
 import type { ClinicalExamState } from './types'
 
 export function countTeethByStatus(state: ClinicalExamState) {
@@ -33,6 +34,8 @@ export function buildClinicalExamSummary(
     ...(examDate ? [`Огноо: ${examDate}`] : []),
     `Шүд: цоорсон ${caries}, ломбодсон ${filled}${cariesList ? ` (${cariesList})` : ''}${filledList ? `; ломбодсон: ${filledList}` : ''}`,
     `Хараа: OD ${state.visionOD.toFixed(1)}, OS ${state.visionOS.toFixed(1)}`,
+    `Цусны даралт: ${formatBloodPressure(state)}`,
+    `Пульс: ${formatPulse(state)}`,
     `Амьсгал: ханиалга ${state.cough ? 'тийм' : 'үгүй'}, сонсгол ${state.breathAbnormal ? 'хэвийн бус' : 'хэвийн'}`,
   ]
   return lines.join('\n')

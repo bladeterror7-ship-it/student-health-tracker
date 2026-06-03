@@ -194,8 +194,6 @@ export default function ParentDashboard() {
                   </span>
                   {' · '}
                   Сүүлийн үзлэг: {childProfile.lastCheckup}
-                  {' · '}
-                  Пульс {childProfile.vitals.pulse}
                 </p>
               ) : (
                 <p className="mt-1 text-sm text-slate-500 dark:text-sky-100/55">

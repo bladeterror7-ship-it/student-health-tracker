@@ -4,6 +4,9 @@ export type ClinicalExamState = {
   teeth: Record<string, 'healthy' | 'caries' | 'filled'>
   visionOD: number
   visionOS: number
+  bpSystolic: number
+  bpDiastolic: number
+  pulseBpm: number
   cough: boolean
   breathAbnormal: boolean
 }
@@ -21,6 +24,9 @@ const DEFAULT_STATE: ClinicalExamState = {
   teeth: {},
   visionOD: 1.0,
   visionOS: 1.0,
+  bpSystolic: 0,
+  bpDiastolic: 0,
+  pulseBpm: 0,
   cough: false,
   breathAbnormal: false,
 }
@@ -64,6 +70,18 @@ function normalizeState(raw: unknown): ClinicalExamState {
       typeof o.visionOS === 'number' && Number.isFinite(o.visionOS)
         ? o.visionOS
         : DEFAULT_STATE.visionOS,
+    bpSystolic:
+      typeof o.bpSystolic === 'number' && Number.isFinite(o.bpSystolic)
+        ? o.bpSystolic
+        : DEFAULT_STATE.bpSystolic,
+    bpDiastolic:
+      typeof o.bpDiastolic === 'number' && Number.isFinite(o.bpDiastolic)
+        ? o.bpDiastolic
+        : DEFAULT_STATE.bpDiastolic,
+    pulseBpm:
+      typeof o.pulseBpm === 'number' && Number.isFinite(o.pulseBpm)
+        ? o.pulseBpm
+        : DEFAULT_STATE.pulseBpm,
     cough: Boolean(o.cough),
     breathAbnormal: Boolean(o.breathAbnormal),
   }

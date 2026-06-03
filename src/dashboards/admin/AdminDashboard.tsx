@@ -120,9 +120,6 @@ export default function AdminDashboard() {
     studentId: '',
     overallStatus: '',
     lastCheckup: '',
-    pulse: '',
-    pressure: '',
-    vision: '',
   })
 
   const [editingPe, setEditingPe] = useState<PERecord | null>(null)
@@ -304,10 +301,7 @@ export default function AdminDashboard() {
     }
     const hasPatch =
       profileQuickForm.overallStatus.trim() ||
-      profileQuickForm.lastCheckup.trim() ||
-      profileQuickForm.pulse.trim() ||
-      profileQuickForm.pressure.trim() ||
-      profileQuickForm.vision.trim()
+      profileQuickForm.lastCheckup.trim()
     if (!hasPatch) {
       toast.message('Шинэчлэх талбаруудыг бөглөнө үү')
       return
@@ -315,28 +309,12 @@ export default function AdminDashboard() {
     const patch: Partial<{
       overallStatus: string
       lastCheckup: string
-      vitals: {
-        pulse: string
-        pressure: string
-        vision: string
-      }
     }> = {}
     if (profileQuickForm.overallStatus.trim()) {
       patch.overallStatus = profileQuickForm.overallStatus.trim()
     }
     if (profileQuickForm.lastCheckup.trim()) {
       patch.lastCheckup = profileQuickForm.lastCheckup.trim()
-    }
-    if (
-      profileQuickForm.pulse.trim() ||
-      profileQuickForm.pressure.trim() ||
-      profileQuickForm.vision.trim()
-    ) {
-      patch.vitals = {
-        pulse: profileQuickForm.pulse.trim() || '—',
-        pressure: profileQuickForm.pressure.trim() || '—',
-        vision: profileQuickForm.vision.trim() || '—',
-      }
     }
     upsertHealthProfile(profileQuickForm.studentId, patch)
     toast.success('Эрүүл мэндийн тойм шинэчлэгдлээ')
@@ -956,56 +934,6 @@ export default function AdminDashboard() {
                       className="w-full rounded-xl border border-emerald-200/70 bg-white/90 px-3 py-2 text-sm dark:border-white/15 dark:bg-black/35 dark:text-white"
                     />
                   </label>
-                  <div className="grid gap-2 sm:grid-cols-3">
-                    <label className="block space-y-1 sm:col-span-1">
-                      <span className="text-[11px] font-medium text-emerald-900/85 dark:text-emerald-50/80">
-                        Импульс
-                      </span>
-                      <input
-                        value={profileQuickForm.pulse}
-                        onChange={(e) =>
-                          setProfileQuickForm((f) => ({
-                            ...f,
-                            pulse: e.target.value,
-                          }))
-                        }
-                        placeholder="72 / мин"
-                        className="w-full rounded-lg border border-emerald-200/70 bg-white/90 px-2 py-1.5 text-xs dark:border-white/15 dark:bg-black/35 dark:text-white"
-                      />
-                    </label>
-                    <label className="block space-y-1">
-                      <span className="text-[11px] font-medium text-emerald-900/85 dark:text-emerald-50/80">
-                        Даралт
-                      </span>
-                      <input
-                        value={profileQuickForm.pressure}
-                        onChange={(e) =>
-                          setProfileQuickForm((f) => ({
-                            ...f,
-                            pressure: e.target.value,
-                          }))
-                        }
-                        placeholder="112/74 mmHg"
-                        className="w-full rounded-lg border border-emerald-200/70 bg-white/90 px-2 py-1.5 text-xs dark:border-white/15 dark:bg-black/35 dark:text-white"
-                      />
-                    </label>
-                    <label className="block space-y-1">
-                      <span className="text-[11px] font-medium text-emerald-900/85 dark:text-emerald-50/80">
-                        Хараа
-                      </span>
-                      <input
-                        value={profileQuickForm.vision}
-                        onChange={(e) =>
-                          setProfileQuickForm((f) => ({
-                            ...f,
-                            vision: e.target.value,
-                          }))
-                        }
-                        placeholder="Үзлэг хэвийн"
-                        className="w-full rounded-lg border border-emerald-200/70 bg-white/90 px-2 py-1.5 text-xs dark:border-white/15 dark:bg-black/35 dark:text-white"
-                      />
-                    </label>
-                  </div>
                   <button
                     type="submit"
                     className="w-full rounded-xl bg-gradient-to-r from-teal-500 to-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md"

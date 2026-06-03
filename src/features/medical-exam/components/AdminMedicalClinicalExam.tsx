@@ -7,8 +7,10 @@ import { buildClinicalExamSummary } from '../clinicalExamSummary'
 import { formatExamDateMn, todayYmd } from '../clinicalExamRecords'
 import { DEFAULT_CLINICAL_EXAM, type ClinicalExamState } from '../types'
 import ClinicalExamDetailCard from './ClinicalExamDetailCard'
+import BloodPressureSection from './BloodPressureSection'
 import DentalMapSection from './DentalMapSection'
 import EyeExamSection from './EyeExamSection'
+import PulseEcgSection from './PulseEcgSection'
 import RespiratoryExamSection from './RespiratoryExamSection'
 
 export default function AdminMedicalClinicalExam({
@@ -219,6 +221,12 @@ export default function AdminMedicalClinicalExam({
               </div>
               <div className="rounded-2xl border border-sky-200/45 bg-white/60 p-4 dark:border-sky-500/20 dark:bg-black/20">
                 <EyeExamSection state={exam} onChange={patch} />
+              </div>
+              <div className="rounded-2xl border border-rose-200/45 bg-gradient-to-br from-rose-50/50 via-white/60 to-pink-50/40 p-4 dark:border-rose-500/20 dark:from-rose-950/25 dark:via-black/20 dark:to-pink-950/20">
+                <BloodPressureSection state={exam} onChange={patch} />
+              </div>
+              <div className="rounded-2xl border border-pink-200/45 bg-gradient-to-br from-pink-50/40 via-white/60 to-slate-50/50 p-4 dark:border-pink-500/20 dark:from-pink-950/20 dark:via-black/20 dark:to-slate-950/30">
+                <PulseEcgSection state={exam} onChange={patch} />
               </div>
               <div className="rounded-2xl border border-teal-200/45 bg-white/60 p-4 dark:border-teal-500/20 dark:bg-black/20">
                 <RespiratoryExamSection state={exam} onChange={patch} />

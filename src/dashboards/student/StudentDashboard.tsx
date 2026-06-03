@@ -5,7 +5,6 @@ import {
   Brain,
   ChevronRight,
   Droplets,
-  HeartPulse,
   NotebookPen,
   Stethoscope,
 } from 'lucide-react'
@@ -300,48 +299,35 @@ export default function StudentDashboard() {
 
               <StudentMedicalClinicalSummary studentId={studentId} />
 
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div className="min-w-0 flex-1 space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">
-                    Ерөнхий төлөв
-                  </p>
-                  {!studentId ? (
-                    <>
-                      <p className="text-sm font-semibold text-amber-800 dark:text-amber-100">
-                        Сурагчийн бүртгэл таарахгүй байна.
-                      </p>
-                      <p className="text-sm text-slate-600 dark:text-emerald-100/65">
-                        Админд бүртгүүлсэн имэйлээрээ нэвтэрсэн эсэхээ
-                        шалгана уу — эмчийн түүх нэвтрэх сурагчийн ID-д
-                        холбогдоно.
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="break-words text-xl font-semibold text-slate-900 dark:text-white">
-                        {medicalProfile?.overallStatus ??
-                          'Өгөгдөл бүртгэгдээгүй байна'}
-                      </p>
-                      <p className="text-sm text-slate-600 dark:text-emerald-100/65">
-                        Сүүлийн үзлэг:{' '}
-                        <span className="font-medium text-slate-900 dark:text-white">
-                          {medicalProfile?.lastCheckup ?? '—'}
-                        </span>
-                      </p>
-                    </>
-                  )}
-                </div>
-                <div className="grid min-w-[200px] max-w-full gap-2 rounded-2xl border border-emerald-500/25 bg-emerald-500/10 px-4 py-3 text-sm dark:bg-emerald-500/15">
-                  <div className="flex items-center gap-2 font-medium text-emerald-900 dark:text-emerald-50">
-                    <HeartPulse className="size-4 shrink-0" />
-                    Үзүүлэлтүүд
-                  </div>
-                  <ul className="space-y-1 break-words text-emerald-900/90 dark:text-emerald-50/85">
-                    <li>Импульс: {medicalProfile?.vitals.pulse ?? '—'}</li>
-                    <li>Даралт: {medicalProfile?.vitals.pressure ?? '—'}</li>
-                    <li>Хараа: {medicalProfile?.vitals.vision ?? '—'}</li>
-                  </ul>
-                </div>
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">
+                  Ерөнхий төлөв
+                </p>
+                {!studentId ? (
+                  <>
+                    <p className="text-sm font-semibold text-amber-800 dark:text-amber-100">
+                      Сурагчийн бүртгэл таарахгүй байна.
+                    </p>
+                    <p className="text-sm text-slate-600 dark:text-emerald-100/65">
+                      Админд бүртгүүлсэн имэйлээрээ нэвтэрсэн эсэхээ
+                      шалгана уу — эмчийн түүх нэвтрэх сурагчийн ID-д
+                      холбогдоно.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="break-words text-xl font-semibold text-slate-900 dark:text-white">
+                      {medicalProfile?.overallStatus ??
+                        'Өгөгдөл бүртгэгдээгүй байна'}
+                    </p>
+                    <p className="text-sm text-slate-600 dark:text-emerald-100/65">
+                      Сүүлийн үзлэг:{' '}
+                      <span className="font-medium text-slate-900 dark:text-white">
+                        {medicalProfile?.lastCheckup ?? '—'}
+                      </span>
+                    </p>
+                  </>
+                )}
               </div>
 
               <div className="grid gap-4 lg:grid-cols-2">

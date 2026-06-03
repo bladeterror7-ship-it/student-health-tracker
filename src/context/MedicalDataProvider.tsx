@@ -283,7 +283,6 @@ export function MedicalDataProvider({ children }: { children: ReactNode }) {
     ) => {
       const latest = latestClinicalExamRecord(records)
       if (!latest) return profiles
-      const vision = `OD ${latest.state.visionOD.toFixed(1)}, OS ${latest.state.visionOS.toFixed(1)}`
       const fb = resolvedProfileFallback(
         studentId,
         profiles,
@@ -294,7 +293,6 @@ export function MedicalDataProvider({ children }: { children: ReactNode }) {
         ...profiles,
         [studentId]: {
           ...base,
-          vitals: { ...base.vitals, vision },
           lastCheckup:
             latest.examDate.localeCompare(base.lastCheckup) > 0
               ? latest.examDate

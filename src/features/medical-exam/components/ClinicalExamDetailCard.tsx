@@ -1,6 +1,12 @@
 import { AlertTriangle } from 'lucide-react'
 import { countTeethByStatus } from '../clinicalExamSummary'
 import { formatExamDateMn } from '../clinicalExamRecords'
+import {
+  formatBloodPressure,
+  formatPulse,
+  isBloodPressureHigh,
+  isPulseHigh,
+} from '../vitalsHelpers'
 import type { ClinicalExamRecord } from '../types'
 
 export default function ClinicalExamDetailCard({
@@ -14,9 +20,13 @@ export default function ClinicalExamDetailCard({
   const { caries, filled } = countTeethByStatus(state)
   const visionLow = state.visionOD < 0.5 || state.visionOS < 0.5
   const respAlert = state.cough || state.breathAbnormal
+  const bpHigh =
+    isBloodPressureHigh(state.bpSystolic, state.bpDiastolic) &&
+    state.bpSystolic > 0
+  const pulseHigh = isPulseHigh(state.pulseBpm)
 
   return (
-    <div className="grid gap-2 sm:grid-cols-3">
+    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
       {showDate && (
         <p className="sm:col-span-3 text-xs font-medium text-slate-500 dark:text-emerald-100/55">
           {formatExamDateMn(record.examDate)}
@@ -48,6 +58,46 @@ export default function ClinicalExamDetailCard({
           <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-red-600">
             <AlertTriangle className="size-3" />
             Анхаарал шаардлагатай
+          </p>
+        )}
+      </div>
+      <div
+        className={`rounded-xl border p-3 ${
+          bpHigh
+            ? 'border-red-300/60 bg-red-50/80 dark:border-red-500/35 dark:bg-red-950/30'
+            : 'border-rose-200/60 bg-white/80 dark:border-rose-500/20 dark:bg-black/25'
+        }`}
+      >
+        <p className="text-[10px] font-bold uppercase text-rose-800 dark:text-rose-200">
+          Даралт
+        </p>
+        <p className="mt-1 text-sm font-semibold tabular-nums text-slate-800 dark:text-white">
+          {formatBloodPressure(state)}
+        </p>
+        {bpHigh && (
+          <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-red-600">
+            <AlertTriangle className="size-3" />
+            Өндөр
+          </p>
+        )}
+      </div>
+      <div
+        className={`rounded-xl border p-3 ${
+          pulseHigh
+            ? 'border-orange-300/60 bg-orange-50/80 dark:border-orange-500/35 dark:bg-orange-950/30'
+            : 'border-pink-200/60 bg-white/80 dark:border-pink-500/20 dark:bg-black/25'
+        }`}
+      >
+        <p className="text-[10px] font-bold uppercase text-pink-800 dark:text-pink-200">
+          Пульс
+        </p>
+        <p className="mt-1 text-sm font-semibold tabular-nums text-slate-800 dark:text-white">
+          {formatPulse(state)}
+        </p>
+        {pulseHigh && (
+          <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-orange-700">
+            <AlertTriangle className="size-3" />
+            &gt;120 BPM
           </p>
         )}
       </div>
