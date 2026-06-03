@@ -16,6 +16,11 @@ import {
   replyToDoctorQuestion,
 } from '../api/_lib/doctorQuestions.js'
 import {
+  createClinicalExam,
+  listClinicalExams,
+  updateClinicalExam,
+} from '../api/_lib/clinicalExams.js'
+import {
   deleteStudent,
   listStudents,
   loginStudent,
@@ -249,6 +254,64 @@ app.patch('/api/doctor-questions', async (req, res) => {
       return
     }
     res.json({ ok: true, question })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({
+      ok: false,
+      reason: error instanceof Error ? error.message : 'Server error',
+    })
+  }
+})
+
+app.get('/api/clinical-exams', async (req, res) => {
+  try {
+    const studentId =
+      typeof req.query.studentId === 'string' ? req.query.studentId : undefined
+    const exams = await listClinicalExams(studentId)
+    res.json({ ok: true, exams })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({
+      ok: false,
+      reason: error instanceof Error ? error.message : 'Server error',
+    })
+  }
+})
+
+app.post('/api/clinical-exams', async (req, res) => {
+  try {
+    const result = await createClinicalExam(req.body)
+    if ('ok' in result && result.ok === false) {
+      res.status(400).json({ ok: false, reason: result.reason })
+      return
+    }
+    res.status(201).json({ ok: true, exam: result })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({
+      ok: false,
+      reason: error instanceof Error ? error.message : 'Server error',
+    })
+  }
+})
+
+app.patch('/api/clinical-exams', async (req, res) => {
+  try {
+    const { id, state, examDate } = req.body as {
+      id?: string
+      state?: unknown
+      examDate?: string
+    }
+    if (!id) {
+      res.status(400).json({ ok: false, reason: 'id шаардлагатай' })
+      return
+    }
+    const exam = await updateClinicalExam({ id, state: state as never, examDate })
+    if (!exam) {
+      res.status(404).json({ ok: false, reason: 'Үзлэг олдсонгүй' })
+      return
+    }
+    res.json({ ok: true, exam })
   } catch (error) {
     console.error(error)
     res.status(500).json({

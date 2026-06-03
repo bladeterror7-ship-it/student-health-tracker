@@ -16,6 +16,11 @@ import {
   type PortalRole,
 } from './portal.js'
 import {
+  createClinicalExam,
+  listClinicalExams,
+  updateClinicalExam,
+} from './clinicalExams.js'
+import {
   deleteStudent,
   listStudents,
   loginStudent,
@@ -322,6 +327,59 @@ async function handleDoctorQuestions(req: VercelRequest, res: VercelResponse) {
   return sendError(res, 405, 'Method not allowed')
 }
 
+async function handleClinicalExams(req: VercelRequest, res: VercelResponse) {
+  applyCors(res, 'GET, POST, PATCH, OPTIONS')
+  if (handleOptions(req, res)) return
+
+  if (req.method === 'GET') {
+    const q = req.query.studentId
+    const studentId =
+      typeof q === 'string' && q.trim() ? q.trim() : undefined
+    const exams = await listClinicalExams(studentId)
+    return res.status(200).json({ ok: true, exams })
+  }
+
+  if (req.method === 'POST') {
+    const body = parseJsonBody<{
+      studentId?: string
+      studentid?: string
+      examDate?: string
+      examdate?: string
+      state?: unknown
+    }>(req)
+    const studentId = body.studentId ?? body.studentid ?? ''
+    const examDate = body.examDate ?? body.examdate ?? ''
+    const result = await createClinicalExam({
+      studentId,
+      examDate,
+      state: body.state as never,
+    })
+    if ('ok' in result && result.ok === false) {
+      return sendError(res, 400, result.reason)
+    }
+    return res.status(201).json({ ok: true, exam: result })
+  }
+
+  if (req.method === 'PATCH') {
+    const body = parseJsonBody<{
+      id?: string
+      state?: unknown
+      examDate?: string
+      examdate?: string
+    }>(req)
+    if (!body.id) return sendError(res, 400, 'id шаардлагатай')
+    const updated = await updateClinicalExam({
+      id: body.id,
+      state: body.state as never,
+      examDate: body.examDate ?? body.examdate,
+    })
+    if (!updated) return sendError(res, 404, 'Үзлэг олдсонгүй')
+    return res.status(200).json({ ok: true, exam: updated })
+  }
+
+  return sendError(res, 405, 'Method not allowed')
+}
+
 const ROUTES: Record<
   string,
   (req: VercelRequest, res: VercelResponse) => Promise<unknown>
@@ -339,6 +397,7 @@ const ROUTES: Record<
   'reset-student-password': handleResetStudentPassword,
   'reset-portal-password': handleResetPortalPassword,
   'doctor-questions': handleDoctorQuestions,
+  'clinical-exams': handleClinicalExams,
 }
 
 export async function dispatchApiRoute(

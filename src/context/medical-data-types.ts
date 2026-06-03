@@ -1,4 +1,8 @@
 import type {
+  ClinicalExamRecord,
+  ClinicalExamState,
+} from '../features/medical-exam/types'
+import type {
   MedicalRecord,
   StudentHealthAlert,
   StudentHealthProfile,
@@ -23,5 +27,23 @@ export interface MedicalDataContextValue {
   upsertHealthProfile: (
     studentId: string,
     patch: Partial<Omit<StudentHealthProfile, 'studentId'>>,
+  ) => void
+  listClinicalExams: (
+    studentId: string | null | undefined,
+  ) => ClinicalExamRecord[]
+  getClinicalExamRecord: (
+    studentId: string | null | undefined,
+    examId: string,
+  ) => ClinicalExamRecord | null
+  createClinicalExam: (studentId: string, examDate: string) => string
+  updateClinicalExamRecord: (
+    studentId: string,
+    examId: string,
+    state: ClinicalExamState,
+  ) => void
+  updateClinicalExamDate: (
+    studentId: string,
+    examId: string,
+    examDate: string,
   ) => void
 }

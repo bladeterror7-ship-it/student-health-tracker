@@ -74,6 +74,20 @@ export function ensureSchema(): Promise<void> {
         CREATE INDEX IF NOT EXISTS doctor_questions_created_idx
         ON doctor_questions (created_at DESC)
       `
+      await sql`
+        CREATE TABLE IF NOT EXISTS clinical_exams (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          student_id UUID NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+          exam_date DATE NOT NULL,
+          state JSONB NOT NULL DEFAULT '{}'::jsonb,
+          saved_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `
+      await sql`
+        CREATE INDEX IF NOT EXISTS clinical_exams_student_date_idx
+        ON clinical_exams (student_id, exam_date DESC, saved_at DESC)
+      `
     })().catch((error) => {
       schemaReady = null
       throw error

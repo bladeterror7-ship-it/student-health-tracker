@@ -1,3 +1,8 @@
+import {
+  mergeLegacyClinicalKeys,
+  normalizeClinicalExamsMap,
+} from '../features/medical-exam/clinicalExamRecords'
+import type { ClinicalExamRecord } from '../features/medical-exam/types'
 import type {
   MedicalRecord,
   StudentHealthAlert,
@@ -10,8 +15,14 @@ export const MEDICAL_CHANGED_EVENT = 'pe-medical-shared-changed'
 const LS_RECORDS = 'pe-shared-medical-records-v1'
 const LS_ALERTS = 'pe-shared-medical-alerts-v1'
 const LS_PROFILES = 'pe-shared-medical-profiles-v1'
+const LS_CLINICAL = 'pe-shared-clinical-exams-v1'
 
-export const MEDICAL_STORAGE_KEYS = [LS_RECORDS, LS_ALERTS, LS_PROFILES] as const
+export const MEDICAL_STORAGE_KEYS = [
+  LS_RECORDS,
+  LS_ALERTS,
+  LS_PROFILES,
+  LS_CLINICAL,
+] as const
 
 const LEGACY_SEED_STUDENT_IDS = new Set(['seed_demo', 'seed_1', 'seed_2'])
 const LEGACY_SEED_RECORD_IDS = new Set(['m1', 'm2', 'md_demo_hist_1', 'md_demo_hist_2', 'md_demo_hist_3'])
@@ -21,10 +32,11 @@ export type MedicalBundle = {
   records: MedicalRecord[]
   alerts: StudentHealthAlert[]
   profiles: Record<string, StudentHealthProfile>
+  clinicalExams: Record<string, ClinicalExamRecord[]>
 }
 
 export function emptyMedicalBundle(): MedicalBundle {
-  return { records: [], alerts: [], profiles: {} }
+  return { records: [], alerts: [], profiles: {}, clinicalExams: {} }
 }
 
 function isLegacySeedRecord(row: MedicalRecord): boolean {
@@ -76,26 +88,37 @@ function sanitizeBundle(bundle: MedicalBundle): MedicalBundle {
       (x) => x.studentId && x.text && !isLegacySeedAlert(x),
     ),
     profiles: stripLegacyProfiles(bundle.profiles),
+    clinicalExams: bundle.clinicalExams ?? {},
   }
 }
+
+const LEGACY_CLINICAL_PREFIX = 'medical-clinical-exam-v1:'
 
 export function loadMedicalBundle(): MedicalBundle {
   try {
     const rRaw = localStorage.getItem(LS_RECORDS)
     const aRaw = localStorage.getItem(LS_ALERTS)
     const pRaw = localStorage.getItem(LS_PROFILES)
-    if (!rRaw && !aRaw && !pRaw) {
+    const cRaw = localStorage.getItem(LS_CLINICAL)
+    if (!rRaw && !aRaw && !pRaw && !cRaw) {
       return emptyMedicalBundle()
     }
 
     const records = rRaw ? (JSON.parse(rRaw) as MedicalRecord[]) : []
     const alerts = aRaw ? (JSON.parse(aRaw) as StudentHealthAlert[]) : []
     const profiles = pRaw ? parseProfiles(JSON.parse(pRaw)) : {}
+    const clinicalRaw = cRaw ? JSON.parse(cRaw) : {}
+    let clinicalExams = normalizeClinicalExamsMap(clinicalRaw)
+    clinicalExams = mergeLegacyClinicalKeys(
+      clinicalExams,
+      LEGACY_CLINICAL_PREFIX,
+    )
 
     const bundle = sanitizeBundle({
       records: Array.isArray(records) ? records : [],
       alerts: Array.isArray(alerts) ? alerts : [],
       profiles,
+      clinicalExams,
     })
 
     return bundle
@@ -110,6 +133,7 @@ export function persistMedicalBundle(bundle: MedicalBundle) {
     localStorage.setItem(LS_RECORDS, JSON.stringify(clean.records))
     localStorage.setItem(LS_ALERTS, JSON.stringify(clean.alerts))
     localStorage.setItem(LS_PROFILES, JSON.stringify(clean.profiles))
+    localStorage.setItem(LS_CLINICAL, JSON.stringify(clean.clinicalExams))
   } catch {
     /* quota */
   }

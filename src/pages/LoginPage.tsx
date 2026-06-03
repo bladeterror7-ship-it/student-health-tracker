@@ -274,9 +274,6 @@ export default function LoginPage() {
           >
             <WellbeLogo size="hero" className="drop-shadow-[0_4px_20px_rgba(0,0,0,0.25)]" />
           </motion.div>
-          <p className="mt-2 text-sm text-emerald-100/75">
-            Нэвтрэх эсвэл шинээр бүртгүүлнэ үү
-          </p>
         </div>
 
         <motion.div

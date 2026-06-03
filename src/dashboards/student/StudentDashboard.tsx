@@ -10,16 +10,19 @@ import {
   Stethoscope,
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import { useMedicalData } from '../../hooks/useMedicalData'
 import { useStudentRegistry } from '../../context/useStudentRegistry'
 import { useNotifications } from '../../context/useNotifications'
 import { readPsychMoodLogs } from '../../lib/psychActivityStorage'
+import { StudentMedicalClinicalSummary } from '../../features/medical-exam'
 import StudentMedicalAppointment from './StudentMedicalAppointment'
 import StudentMedicalAskDoctor from './StudentMedicalAskDoctor'
 import StudentPeActivitySection from './StudentPeActivitySection.tsx'
 import StudentPsychBreathing from './StudentPsychBreathing'
 import StudentPsychResources from './StudentPsychResources'
+import { StudentPsychInteractiveHub } from '../../features/psych'
 import { ViveraDashboard } from '../../features/vivera'
 import StudentPsychGratitude, {
   type PsychJournalEntry,
@@ -101,8 +104,16 @@ function weeklyScoresFromMoodLogs(email: string): number[] {
   })
 }
 
+const TAB_IDS: TabId[] = ['medical', 'psych', 'pe', 'vivera']
+
+function tabFromSearchParams(params: URLSearchParams): TabId {
+  const raw = params.get('tab')
+  return TAB_IDS.includes(raw as TabId) ? (raw as TabId) : 'medical'
+}
+
 export default function StudentDashboard() {
-  const [tab, setTab] = useState<TabId>('medical')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [tab, setTab] = useState<TabId>(() => tabFromSearchParams(searchParams))
   const [psychAmbient, setPsychAmbient] = useState<PsychMoodId | null>(() =>
     loadPsychDailyMoodFromStorage(),
   )
@@ -127,6 +138,20 @@ export default function StudentDashboard() {
   }, [students, session])
 
   const studentId = registryMatch?.id ?? null
+
+  useEffect(() => {
+    const next = tabFromSearchParams(searchParams)
+    setTab((current) => (current === next ? current : next))
+  }, [searchParams])
+
+  function selectTab(next: TabId) {
+    setTab(next)
+    setSearchParams(
+      next === 'medical' ? {} : { tab: next },
+      { replace: true },
+    )
+    if (next === 'psych') markReadByType('psychology')
+  }
 
   useEffect(() => {
     if (!session?.email) {
@@ -219,10 +244,7 @@ export default function StudentDashboard() {
               aria-selected={active}
               aria-controls={`student-panel-${t.id}`}
               id={`student-tab-${t.id}`}
-              onClick={() => {
-                setTab(t.id)
-                if (t.id === 'psych') markReadByType('psychology')
-              }}
+              onClick={() => selectTab(t.id)}
               className={`relative flex min-w-[120px] flex-1 items-center gap-2.5 rounded-xl px-2.5 py-2.5 text-left transition sm:min-w-[130px] sm:gap-3 sm:px-3 ${
                 active
                   ? 'text-slate-900 dark:text-white'
@@ -275,6 +297,8 @@ export default function StudentDashboard() {
                 <StudentMedicalAppointment />
                 <StudentMedicalAskDoctor />
               </div>
+
+              <StudentMedicalClinicalSummary studentId={studentId} />
 
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="min-w-0 flex-1 space-y-2">
@@ -431,6 +455,8 @@ export default function StudentDashboard() {
                 </div>
 
                 <StudentPsychMoodPicker onMoodChange={onPsychMoodChange} />
+
+                <StudentPsychInteractiveHub />
 
                 <div className="grid gap-4 md:grid-cols-3">
                 <div className="md:col-span-2 rounded-2xl border border-violet-400/35 bg-gradient-to-br from-violet-500/15 to-fuchsia-500/10 p-4">

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { type FormEvent, useMemo, useState } from 'react'
 import { toast } from 'sonner'
+import { AdminMedicalClinicalExam } from '../../features/medical-exam'
 import AdminDoctorInbox from './AdminDoctorInbox'
 import AdminPsychologistPanel from './AdminPsychologistPanel'
 import AdminRegisteredParents from './AdminRegisteredParents'
@@ -1014,6 +1015,19 @@ export default function AdminDashboard() {
                 </form>
               </div>
             </div>
+
+            <AdminMedicalClinicalExam
+              studentId={medicalForm.studentId}
+              defaultExamDate={medicalForm.date}
+              onAppendSummary={(block) =>
+                setMedicalForm((f) => ({
+                  ...f,
+                  summary: f.summary.trim()
+                    ? `${f.summary.trim()}\n\n${block}`
+                    : block,
+                }))
+              }
+            />
 
             <div className="overflow-hidden rounded-3xl border border-white/55 bg-white/70 shadow-xl backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/45">
               <div className="border-b border-slate-200/80 px-5 py-4 dark:border-white/10">
