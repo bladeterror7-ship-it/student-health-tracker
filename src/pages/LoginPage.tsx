@@ -272,7 +272,7 @@ export default function LoginPage() {
             transition={{ type: 'spring', stiffness: 200, damping: 18 }}
             className="mx-auto mb-4 flex justify-center"
           >
-            <WellbeLogo size="hero" className="drop-shadow-[0_8px_24px_rgba(0,0,0,0.35)]" />
+            <WellbeLogo size="hero" className="drop-shadow-[0_4px_20px_rgba(0,0,0,0.25)]" />
           </motion.div>
           <p className="mt-2 text-sm text-emerald-100/75">
             Нэвтрэх эсвэл шинээр бүртгүүлнэ үү
