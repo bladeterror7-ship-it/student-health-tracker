@@ -7,7 +7,6 @@ import {
   Mail,
   PartyPopper,
   ShieldCheck,
-  Sparkles,
   User,
   UsersRound,
 } from 'lucide-react'
@@ -25,7 +24,7 @@ import {
   registerParentWithNeon,
   signInPortalWithNeon,
 } from '../lib/neonPortal'
-import { APP_NAME } from '../lib/appBrand'
+import WellbeLogo from '../components/WellbeLogo'
 import { STUDENT_CLASS_OPTIONS, type UserRole } from '../types'
 
 type AuthTab = 'login' | 'register'
@@ -268,13 +267,12 @@ export default function LoginPage() {
       >
         <div className="mb-8 text-center">
           <motion.div
-            initial={{ scale: 0.92 }}
-            animate={{ scale: 1 }}
+            initial={{ scale: 0.92, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
             transition={{ type: 'spring', stiffness: 200, damping: 18 }}
-            className="mx-auto mb-4 inline-flex max-w-full items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-100/95 backdrop-blur-md sm:px-4 sm:text-xs"
+            className="mx-auto mb-4 flex justify-center"
           >
-            <Sparkles className="size-4 shrink-0 text-teal-300" aria-hidden />
-            <span className="text-center leading-tight">{APP_NAME}</span>
+            <WellbeLogo size="hero" className="drop-shadow-[0_8px_24px_rgba(0,0,0,0.35)]" />
           </motion.div>
           <p className="mt-2 text-sm text-emerald-100/75">
             Нэвтрэх эсвэл шинээр бүртгүүлнэ үү

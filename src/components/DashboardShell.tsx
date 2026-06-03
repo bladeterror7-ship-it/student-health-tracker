@@ -1,11 +1,11 @@
 import { motion } from 'framer-motion'
-import { LogOut, ShieldCheck } from 'lucide-react'
+import { LogOut } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import PsychAdminBell from './PsychAdminBell'
 import StudentNotificationBell from './StudentNotificationBell'
 import { useAuth } from '../context/useAuth'
-import { APP_NAME } from '../lib/appBrand'
+import WellbeLogo from './WellbeLogo'
 import { formatSessionGreeting } from '../lib/sessionGreeting'
 import type { UserRole } from '../types'
 
@@ -43,17 +43,10 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
           className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6"
         >
           <motion.div layout className="flex items-center gap-3">
-            <motion.div
-              layout
-              className="flex size-11 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-400 to-emerald-500 text-white shadow-lg shadow-orange-900/25"
-              whileHover={{ scale: 1.03 }}
-            >
-              <ShieldCheck className="size-6" aria-hidden />
+            <motion.div layout whileHover={{ scale: 1.03 }} className="shrink-0">
+              <WellbeLogo size="sm" />
             </motion.div>
             <div className="text-left">
-              <p className="text-[10px] font-semibold uppercase leading-snug tracking-[0.14em] text-emerald-700 sm:text-[11px] sm:tracking-[0.18em] dark:text-emerald-300">
-                {APP_NAME}
-              </p>
               <p className="text-lg font-semibold leading-tight text-slate-900 dark:text-white">
                 {formatSessionGreeting(session)}
               </p>
