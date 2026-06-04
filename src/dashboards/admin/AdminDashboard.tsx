@@ -10,7 +10,7 @@ import {
   Stethoscope,
   Trash2,
 } from 'lucide-react'
-import { type FormEvent, useMemo, useState } from 'react'
+import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { AdminMedicalClinicalExam } from '../../features/medical-exam'
 import AdminDoctorInbox from './AdminDoctorInbox'
@@ -25,7 +25,12 @@ import { usePsychGratitudeLogs } from '../../hooks/usePsychGratitudeLogs'
 import { usePsychMoodLogs } from '../../hooks/usePsychMoodLogs'
 import { useStudentRegistry } from '../../context/useStudentRegistry'
 import { pushNotification } from '../../lib/notificationsStorage'
-import { uid } from '../../lib/uid'
+import {
+  deletePeRecord,
+  readPeRecords,
+  PE_RECORDS_EVENT,
+  upsertPeRecord,
+} from '../../lib/peRecordsStorage'
 import type { MedicalRecord, PERecord } from '../../types'
 
 type AdminTab = 'pe' | 'psych' | 'medical'
@@ -82,7 +87,19 @@ export default function AdminDashboard() {
     upsertHealthProfile,
   } = useMedicalData()
   const { students: registryStudents } = useStudentRegistry()
-  const [peRows, setPeRows] = useState<PERecord[]>([])
+  const [peRows, setPeRows] = useState<PERecord[]>(readPeRecords)
+
+  useEffect(() => {
+    function sync() {
+      setPeRows(readPeRecords())
+    }
+    window.addEventListener(PE_RECORDS_EVENT, sync)
+    window.addEventListener('storage', sync)
+    return () => {
+      window.removeEventListener(PE_RECORDS_EVENT, sync)
+      window.removeEventListener('storage', sync)
+    }
+  }, [])
   const psychBookings = usePsychBookings()
   const psychMoodLogs = usePsychMoodLogs()
   const psychGratitudeLogs = usePsychGratitudeLogs()
@@ -191,32 +208,19 @@ export default function AdminDashboard() {
       toast.error('Бүх талбарыг зөв бөглөнө үү')
       return
     }
-    if (editingPe) {
-      setPeRows((rows) =>
-        rows.map((r) =>
-          r.id === editingPe.id
-            ? {
-                ...r,
-                studentName: peForm.studentName.trim(),
-                date: peForm.date,
-                activity: peForm.activity.trim(),
-                score,
-              }
-            : r,
-        ),
-      )
-      toast.success('Биеийн тамирын мэдээлэл шинэчлэгдлээ')
-    } else {
-      const row: PERecord = {
-        id: uid('pe'),
-        studentName: peForm.studentName.trim(),
-        date: peForm.date,
-        activity: peForm.activity.trim(),
-        score,
-      }
-      setPeRows((rows) => [row, ...rows])
-      toast.success('Шинэ биеийн тамирын бүртгэл нэмэгдлээ')
-    }
+    upsertPeRecord({
+      id: editingPe?.id,
+      studentName: peForm.studentName.trim(),
+      date: peForm.date,
+      activity: peForm.activity.trim(),
+      score,
+    })
+    setPeRows(readPeRecords())
+    toast.success(
+      editingPe
+        ? 'Биеийн тамирын мэдээлэл шинэчлэгдлээ'
+        : 'Шинэ биеийн тамирын бүртгэл нэмэгдлээ',
+    )
     resetPeForm()
   }
 
@@ -592,9 +596,8 @@ export default function AdminDashboard() {
                             <button
                               type="button"
                               onClick={() => {
-                                setPeRows((rows) =>
-                                  rows.filter((r) => r.id !== row.id),
-                                )
+                                deletePeRecord(row.id)
+                                setPeRows(readPeRecords())
                                 toast.success('Мөр устгагдлаа')
                               }}
                               className="rounded-lg border border-red-200 bg-red-50 p-2 text-red-700 hover:bg-red-100 dark:border-red-500/35 dark:bg-red-950/40 dark:text-red-200 dark:hover:bg-red-950/55"

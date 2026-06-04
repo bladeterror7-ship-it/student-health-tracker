@@ -14,6 +14,7 @@ import { useAuth } from '../../context/useAuth'
 import { useStudentRegistry } from '../../context/useStudentRegistry'
 import { ViveraDashboard } from '../../features/vivera'
 import { useMedicalData } from '../../hooks/useMedicalData'
+import ParentChildHealthPanel from './ParentChildHealthPanel'
 
 type BmiBand = 'under' | 'normal' | 'over' | 'obese'
 
@@ -204,6 +205,13 @@ export default function ParentDashboard() {
           </motion.div>
         </motion.section>
       )}
+
+      {linkedChild && session?.linkedStudentId ? (
+        <ParentChildHealthPanel
+          child={linkedChild}
+          studentId={session.linkedStudentId}
+        />
+      ) : null}
 
       {linkedChild ? (
         <ViveraDashboard
