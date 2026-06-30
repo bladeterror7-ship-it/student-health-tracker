@@ -50,9 +50,6 @@ export default function HoverExpandLoginForm({
         <div className="wellbe-hover-login-container">
           <div className="wellbe-hover-login-form-header">
             <h2>
-              <span className="wellbe-hover-login-icon-pink">
-                <i className="fa-solid fa-border-all" aria-hidden />
-              </span>
               WELLBE+ НЭВТРЭХ
               <span className="wellbe-hover-login-icon-blue">
                 <i className="fa-solid fa-lock" aria-hidden />
