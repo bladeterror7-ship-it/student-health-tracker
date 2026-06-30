@@ -32,12 +32,22 @@ import {
   listPortalAccounts,
   resetPortalPassword,
 } from '../api/_lib/portal.js'
+import {
+  deleteAppBlob,
+  getAppBlob,
+  listAppBlobKeys,
+  listAppStorage,
+  upsertAppBlob,
+  upsertAppStorage,
+  upsertAppStorageBatch,
+} from '../api/_lib/appStorage.js'
+import { pingDatabase } from '../api/_lib/db.js'
 
 const app = express()
 const PORT = Number(process.env.API_PORT) || 3001
 
 app.use(cors())
-app.use(express.json())
+app.use(express.json({ limit: '20mb' }))
 
 app.get('/api/portal-accounts', async (req, res) => {
   try {
@@ -312,6 +322,170 @@ app.patch('/api/clinical-exams', async (req, res) => {
       return
     }
     res.json({ ok: true, exam })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({
+      ok: false,
+      reason: error instanceof Error ? error.message : 'Server error',
+    })
+  }
+})
+
+app.get('/api/health', async (_req, res) => {
+  try {
+    const databaseConfigured = Boolean(process.env.DATABASE_URL)
+    let databaseConnected = false
+    if (databaseConfigured) {
+      databaseConnected = await pingDatabase()
+    }
+    res.status(databaseConnected ? 200 : 503).json({
+      ok: databaseConnected,
+      api: true,
+      databaseConfigured,
+      databaseConnected,
+    })
+  } catch (error) {
+    console.error(error)
+    res.status(503).json({
+      ok: false,
+      api: true,
+      databaseConfigured: Boolean(process.env.DATABASE_URL),
+      databaseConnected: false,
+    })
+  }
+})
+
+app.get('/api/app-storage', async (_req, res) => {
+  try {
+    const items = await listAppStorage()
+    res.json({ ok: true, items })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({
+      ok: false,
+      reason: error instanceof Error ? error.message : 'Server error',
+    })
+  }
+})
+
+app.put('/api/app-storage', async (req, res) => {
+  try {
+    const { key, storageKey, data } = req.body as {
+      key?: string
+      storageKey?: string
+      data?: string
+    }
+    const k = storageKey ?? key ?? ''
+    if (!k.trim()) {
+      res.status(400).json({ ok: false, reason: 'key шаардлагатай' })
+      return
+    }
+    const item = await upsertAppStorage(k, data ?? '')
+    res.json({ ok: true, item })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({
+      ok: false,
+      reason: error instanceof Error ? error.message : 'Server error',
+    })
+  }
+})
+
+app.post('/api/app-storage', async (req, res) => {
+  try {
+    const { items } = req.body as {
+      items?: { storageKey?: string; key?: string; data?: string }[]
+    }
+    const count = await upsertAppStorageBatch(
+      (items ?? []).map((i) => ({
+        storageKey: i.storageKey ?? i.key ?? '',
+        data: i.data ?? '',
+      })),
+    )
+    res.json({ ok: true, count })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({
+      ok: false,
+      reason: error instanceof Error ? error.message : 'Server error',
+    })
+  }
+})
+
+app.get('/api/app-blobs', async (req, res) => {
+  try {
+    const key = typeof req.query.key === 'string' ? req.query.key.trim() : ''
+    if (key) {
+      const blob = await getAppBlob(key)
+      if (!blob) {
+        res.status(404).json({ ok: false, reason: 'Blob олдсонгүй' })
+        return
+      }
+      res.json({ ok: true, blob })
+      return
+    }
+    const keys = await listAppBlobKeys()
+    res.json({ ok: true, keys })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({
+      ok: false,
+      reason: error instanceof Error ? error.message : 'Server error',
+    })
+  }
+})
+
+app.get('/api/app-blobs/:key', async (req, res) => {
+  try {
+    const blob = await getAppBlob(decodeURIComponent(req.params.key))
+    if (!blob) {
+      res.status(404).json({ ok: false, reason: 'Blob олдсонгүй' })
+      return
+    }
+    res.json({ ok: true, blob })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({
+      ok: false,
+      reason: error instanceof Error ? error.message : 'Server error',
+    })
+  }
+})
+
+app.put('/api/app-blobs', async (req, res) => {
+  try {
+    const { blobKey, key, fileName, mimeType, base64 } = req.body as {
+      blobKey?: string
+      key?: string
+      fileName?: string
+      mimeType?: string
+      base64?: string
+    }
+    const k = blobKey ?? key ?? ''
+    if (!k.trim() || !base64) {
+      res.status(400).json({ ok: false, reason: 'key болон base64 шаардлагатай' })
+      return
+    }
+    const blob = await upsertAppBlob({
+      blobKey: k,
+      fileName: fileName ?? 'file',
+      mimeType,
+      base64,
+    })
+    res.json({ ok: true, blob })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({
+      ok: false,
+      reason: error instanceof Error ? error.message : 'Server error',
+    })
+  }
+})
+
+app.delete('/api/app-blobs/:key', async (req, res) => {
+  try {
+    await deleteAppBlob(decodeURIComponent(req.params.key))
+    res.json({ ok: true })
   } catch (error) {
     console.error(error)
     res.status(500).json({

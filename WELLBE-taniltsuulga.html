@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WELLBE+ — Танилцуулга</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: #0f172a;
+      color: #1e293b;
+      overflow: hidden;
+      height: 100vh;
+    }
+    .deck { height: 100vh; position: relative; }
+    .slide {
+      display: none;
+      height: 100vh;
+      padding: 3rem 4rem;
+      background: linear-gradient(145deg, #ecfdf5 0%, #f0fdfa 40%, #fff 100%);
+      flex-direction: column;
+      justify-content: center;
+    }
+    .slide.active { display: flex; }
+    .slide.title {
+      align-items: center;
+      text-align: center;
+      background: linear-gradient(160deg, #d1fae5, #a7f3d0, #fff);
+    }
+    .slide h1 {
+      font-size: clamp(2.5rem, 6vw, 4rem);
+      color: #047857;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    .slide h2 {
+      font-size: clamp(1.5rem, 3.5vw, 2.2rem);
+      color: #0d9488;
+      margin-bottom: 1.5rem;
+      font-weight: 700;
+    }
+    .slide .sub {
+      margin-top: 1rem;
+      font-size: 1.25rem;
+      color: #475569;
+      line-height: 1.6;
+    }
+    .slide ul {
+      list-style: none;
+      max-width: 52rem;
+    }
+    .slide li {
+      font-size: 1.15rem;
+      line-height: 1.55;
+      margin-bottom: 0.75rem;
+      padding-left: 1.5rem;
+      position: relative;
+      color: #334155;
+    }
+    .slide li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0.55em;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+    }
+    .cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      max-width: 56rem;
+    }
+    .cols h3 { color: #059669; font-size: 1.2rem; margin-bottom: 0.75rem; }
+    .nav {
+      position: fixed;
+      bottom: 1.25rem;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      background: rgba(15, 23, 42, 0.85);
+      padding: 0.5rem 1rem;
+      border-radius: 999px;
+      backdrop-filter: blur(8px);
+      z-index: 10;
+    }
+    .nav button {
+      border: none;
+      background: #10b981;
+      color: #fff;
+      padding: 0.5rem 1.25rem;
+      border-radius: 999px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.95rem;
+    }
+    .nav button:hover { background: #059669; }
+    .nav span { color: #e2e8f0; font-size: 0.9rem; min-width: 4rem; text-align: center; }
+    .logo { max-height: 80px; margin-bottom: 1rem; }
+    .hint {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      background: #fff;
+      border: 1px solid #a7f3d0;
+      padding: 0.5rem 1rem;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      color: #047857;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+  <p class="hint">← → сум эсвэл доорх товч · PowerPoint: WELLBE-taniltsuulga.pptx</p>
+  <div class="deck" id="deck">
+    <section class="slide title active">
+      <img class="logo" src="public/wellbe-logo.png" alt="WELLBE+" onerror="this.style.display='none'" />
+      <h1>WELLBE+</h1>
+      <p class="sub">Healthy Habits, Better Life<br />Сургуулийн эрүүл мэндийн цогц портал</p>
+      <p class="sub" style="margin-top:2rem;font-size:1rem">wellbe-plus.com</p>
+    </section>
+    <section class="slide">
+      <h2>Асуудал ба зорилго</h2>
+      <ul>
+        <li>Сургуулийн эрүүл мэндийн мэдээлэл тархсан, цаасан бүртгэлд үлддэг</li>
+        <li>Сурагч, эмч, эцэг эхийн хоорондын холбоо сул</li>
+        <li>WELLBE+ — нэг платформ дээр урьдчилан сэргийлэх, бүртгэх, хянах</li>
+        <li>Илүү тодорхой эмчийн шийдвэр, сурагчийн идэвхтэй оролцоо</li>
+      </ul>
+    </section>
+    <section class="slide">
+      <h2>Системийн тойм</h2>
+      <ul>
+        <li>Вэб: wellbe-plus.com</li>
+        <li>Хэрэглэгчид: Сурагч · Админ · Эцэг эх</li>
+        <li>Модуль: Эмч · Сэтгэл зүй · Биеийн тамир · Vivera</li>
+        <li>Пастель UI — сургуульд ээлтэй дизайн</li>
+      </ul>
+    </section>
+    <section class="slide">
+      <h2>Хэрэглэгчийн эрх</h2>
+      <div class="cols">
+        <div>
+          <h3>Сурагч</h3>
+          <ul>
+            <li>Эмч: цаг захиалга, асуулт</li>
+            <li>Үзлэгийн түүх</li>
+            <li>Сэтгэл зүйн тест</li>
+            <li>Биеийн тамир, Vivera</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Админ & Эцэг эх</h3>
+          <ul>
+            <li>Үзлэг оруулах (шүд, нүд, даралт, ECG)</li>
+            <li>Бүртгэл, анхааруулга</li>
+            <li>Эмчийн хайрцаг</li>
+            <li>Эцэг эх: хүүхдийн тойм</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+    <section class="slide">
+      <h2>Эмч — Сурагч</h2>
+      <ul>
+        <li>Эмчийн цаг захиалга</li>
+        <li>Эмчээс асуух (нууцлах боломжтой)</li>
+        <li>Үзлэгийн түүх, анхааруулга</li>
+      </ul>
+    </section>
+    <section class="slide">
+      <h2>Эмч — Админ үзлэг</h2>
+      <ul>
+        <li>Шүдний зураг · Хараа (Snellen)</li>
+        <li>Цусны даралт + механик хэмжүүр</li>
+        <li>Пульс / ECG монитор</li>
+        <li>Амьсгал · Огноотой түүх (Neon)</li>
+      </ul>
+    </section>
+    <section class="slide">
+      <h2>Сэтгэл зүй</h2>
+      <ul>
+        <li>6 сэтгэл хөдлөлийн сан</li>
+        <li>Хайрын хэлийн тест</li>
+        <li>Геометрийн тест</li>
+        <li>Амьсгалын дасгал, нөөц</li>
+      </ul>
+    </section>
+    <section class="slide">
+      <h2>Технологи</h2>
+      <ul>
+        <li>React · TypeScript · Vite · Tailwind</li>
+        <li>Neon PostgreSQL · Vercel</li>
+        <li>Role-based нэвтрэх систем</li>
+      </ul>
+    </section>
+    <section class="slide title">
+      <h1>Баярлалаа!</h1>
+      <p class="sub">WELLBE+ · wellbe-plus.com</p>
+    </section>
+  </div>
+  <nav class="nav" aria-label="Слайд">
+    <button type="button" id="prev">← Өмнөх</button>
+    <span id="num">1 / 9</span>
+    <button type="button" id="next">Дараах →</button>
+  </nav>
+  <script>
+    const slides = [...document.querySelectorAll(".slide")];
+    let i = 0;
+    const num = document.getElementById("num");
+    function show() {
+      slides.forEach((s, j) => s.classList.toggle("active", j === i));
+      num.textContent = `${i + 1} / ${slides.length}`;
+    }
+    document.getElementById("prev").onclick = () => { i = (i - 1 + slides.length) % slides.length; show(); };
+    document.getElementById("next").onclick = () => { i = (i + 1) % slides.length; show(); };
+    document.onkeydown = (e) => {
+      if (e.key === "ArrowRight" || e.key === " ") { i = (i + 1) % slides.length; show(); e.preventDefault(); }
+      if (e.key === "ArrowLeft") { i = (i - 1 + slides.length) % slides.length; show(); e.preventDefault(); }
+    };
+    show();
+  </script>
+</body>
+</html>

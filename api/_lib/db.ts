@@ -88,6 +88,22 @@ export function ensureSchema(): Promise<void> {
         CREATE INDEX IF NOT EXISTS clinical_exams_student_date_idx
         ON clinical_exams (student_id, exam_date DESC, saved_at DESC)
       `
+      await sql`
+        CREATE TABLE IF NOT EXISTS app_storage (
+          storage_key TEXT PRIMARY KEY,
+          data TEXT NOT NULL DEFAULT '',
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `
+      await sql`
+        CREATE TABLE IF NOT EXISTS app_blobs (
+          blob_key TEXT PRIMARY KEY,
+          file_name TEXT NOT NULL DEFAULT 'file',
+          mime_type TEXT NOT NULL DEFAULT 'application/octet-stream',
+          data BYTEA NOT NULL,
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `
     })().catch((error) => {
       schemaReady = null
       throw error

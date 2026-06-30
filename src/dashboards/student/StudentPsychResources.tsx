@@ -15,6 +15,7 @@ import {
   PSYCH_STRESS_TIPS_EVENT,
   readPsychStressTips,
 } from '../../lib/psychStressTipsStorage'
+import { APP_STORAGE_SYNCED_EVENT } from '../../lib/storageSyncEvents'
 
 type ResourceId = 'grounding' | 'sleep' | 'stress'
 
@@ -175,6 +176,14 @@ export default function StudentPsychResources() {
   useEffect(() => {
     if (!session?.email) return
     setSleepChecks(loadSleepChecks(session.email))
+  }, [session?.email])
+
+  useEffect(() => {
+    if (!session?.email) return
+    const reloadSleep = () => setSleepChecks(loadSleepChecks(session.email))
+    window.addEventListener(APP_STORAGE_SYNCED_EVENT, reloadSleep)
+    return () =>
+      window.removeEventListener(APP_STORAGE_SYNCED_EVENT, reloadSleep)
   }, [session?.email])
 
   useEffect(() => {

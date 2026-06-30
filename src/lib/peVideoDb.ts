@@ -44,18 +44,21 @@ export type PeVideoRecord = {
   fileName: string
 }
 
+import { syncPeVideoBlobAfterSave, syncPeVideoBlobAfterDelete } from './peVideoBlobSync'
+
 export async function saveVideoBlob(
   key: string,
   blob: Blob,
   fileName: string,
 ): Promise<void> {
   const db = await openPeVideoDb()
-  return new Promise((resolve, reject) => {
+  await new Promise<void>((resolve, reject) => {
     const tx = db.transaction(STORE, 'readwrite')
     tx.oncomplete = () => resolve()
     tx.onerror = () => reject(tx.error ?? new Error('IndexedDB transaction failed'))
     tx.objectStore(STORE).put({ blob, fileName }, key)
   })
+  void syncPeVideoBlobAfterSave(key, blob, fileName)
 }
 
 export async function getVideoBlob(key: string): Promise<PeVideoRecord | undefined> {
@@ -70,12 +73,13 @@ export async function getVideoBlob(key: string): Promise<PeVideoRecord | undefin
 
 export async function deleteVideoBlob(key: string): Promise<void> {
   const db = await openPeVideoDb()
-  return new Promise((resolve, reject) => {
+  await new Promise<void>((resolve, reject) => {
     const tx = db.transaction(STORE, 'readwrite')
     tx.oncomplete = () => resolve()
     tx.onerror = () => reject(tx.error ?? new Error('IndexedDB delete failed'))
     tx.objectStore(STORE).delete(key)
   })
+  void syncPeVideoBlobAfterDelete(key)
 }
 
 /** Copies pending blob to a stable row key and removes pending. */

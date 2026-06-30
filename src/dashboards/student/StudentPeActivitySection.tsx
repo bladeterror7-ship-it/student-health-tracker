@@ -22,6 +22,7 @@ import {
 import { createPortal } from 'react-dom'
 import { toast } from 'sonner'
 import { uid } from '../../lib/uid'
+import { APP_STORAGE_SYNCED_EVENT } from '../../lib/storageSyncEvents'
 import { StudentPeTeacherTutorials } from './StudentPeTeacherTutorials'
 import {
   deleteVideoBlob,
@@ -211,6 +212,21 @@ export default function StudentPeActivitySection() {
       clearUploadTimers()
     }
   }, [clearUploadTimers])
+
+  useEffect(() => {
+    const reloadFromStorage = () => {
+      setActivities(loadPersistedActivities())
+      setUploadedVideos(
+        loadPersistedGalleryManifest().map((v) => ({
+          ...v,
+          videoUrl: null,
+        })),
+      )
+    }
+    window.addEventListener(APP_STORAGE_SYNCED_EVENT, reloadFromStorage)
+    return () =>
+      window.removeEventListener(APP_STORAGE_SYNCED_EVENT, reloadFromStorage)
+  }, [])
 
   useEffect(() => {
     try {

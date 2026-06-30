@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ActivityLevelId } from '../constants'
+import { APP_STORAGE_SYNCED_EVENT } from '../../../lib/storageSyncEvents'
 import { calculateDailyGoalMl } from '../utils/goalCalculator'
 import { saveWaterHistoryEntry } from '../utils/waterHistory'
 
@@ -85,6 +86,18 @@ export function useViveraWater(email: string | undefined) {
     setWeightKg(profile.weightKg)
     setActivityId(profile.activityId)
     setIntakeMl(loadDay(email))
+  }, [email])
+
+  useEffect(() => {
+    if (!email) return
+    const reload = () => {
+      const profile = loadProfile(email)
+      setWeightKg(profile.weightKg)
+      setActivityId(profile.activityId)
+      setIntakeMl(loadDay(email))
+    }
+    window.addEventListener(APP_STORAGE_SYNCED_EVENT, reload)
+    return () => window.removeEventListener(APP_STORAGE_SYNCED_EVENT, reload)
   }, [email])
 
   const dailyGoalMl = useMemo(

@@ -1,8 +1,45 @@
-import { motion, AnimatePresence } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import { CalendarClock, Check } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useAuth } from '../../context/useAuth'
 
 type DayKey = string
+
+type BookedSlot = {
+  dayKey: DayKey
+  slotId: string
+  label: string
+}
+
+function appointmentStorageKey(email: string) {
+  return `medical-appointment-booking-v1:${email.toLowerCase()}`
+}
+
+function loadBooked(email: string | undefined): BookedSlot | null {
+  if (!email) return null
+  try {
+    const raw = localStorage.getItem(appointmentStorageKey(email))
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as BookedSlot
+    if (parsed?.dayKey && parsed.slotId && parsed.label) return parsed
+    return null
+  } catch {
+    return null
+  }
+}
+
+function persistBooked(email: string | undefined, booked: BookedSlot | null) {
+  if (!email) return
+  try {
+    if (booked) {
+      localStorage.setItem(appointmentStorageKey(email), JSON.stringify(booked))
+    } else {
+      localStorage.removeItem(appointmentStorageKey(email))
+    }
+  } catch {
+    /* quota */
+  }
+}
 
 const MOCK_DAYS: { key: DayKey; short: string; full: string }[] = [
   { key: '2026-05-19', short: 'Да', full: '5 сар 19' },
@@ -44,12 +81,20 @@ const MOCK_SLOTS: Record<
 }
 
 export default function StudentMedicalAppointment() {
+  const { session } = useAuth()
+  const email = session?.email
   const [activeDay, setActiveDay] = useState<DayKey>(MOCK_DAYS[0].key)
-  const [booked, setBooked] = useState<{
-    dayKey: DayKey
-    slotId: string
-    label: string
-  } | null>(null)
+  const [booked, setBooked] = useState<BookedSlot | null>(() =>
+    loadBooked(email),
+  )
+
+  useEffect(() => {
+    setBooked(loadBooked(email))
+  }, [email])
+
+  useEffect(() => {
+    persistBooked(email, booked)
+  }, [email, booked])
 
   const slots = useMemo(() => MOCK_SLOTS[activeDay] ?? [], [activeDay])
   const activeMeta = MOCK_DAYS.find((d) => d.key === activeDay)

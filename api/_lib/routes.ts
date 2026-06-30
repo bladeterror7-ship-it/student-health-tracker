@@ -1,6 +1,15 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { parseJsonBody } from './body.js'
 import { applyCors, handleOptions } from './cors.js'
+import {
+  deleteAppBlob,
+  getAppBlob,
+  listAppBlobKeys,
+  listAppStorage,
+  upsertAppBlob,
+  upsertAppStorage,
+  upsertAppStorageBatch,
+} from './appStorage.js'
 import { pingDatabase } from './db.js'
 import {
   addDoctorQuestion,
@@ -380,6 +389,89 @@ async function handleClinicalExams(req: VercelRequest, res: VercelResponse) {
   return sendError(res, 405, 'Method not allowed')
 }
 
+async function handleAppStorage(req: VercelRequest, res: VercelResponse) {
+  applyCors(res, 'GET, PUT, POST, OPTIONS')
+  if (handleOptions(req, res)) return
+
+  if (req.method === 'GET') {
+    const items = await listAppStorage()
+    return res.status(200).json({ ok: true, items })
+  }
+
+  if (req.method === 'PUT') {
+    const body = parseJsonBody<{ key?: string; storageKey?: string; data?: string }>(
+      req,
+    )
+    const key = body.storageKey ?? body.key ?? ''
+    if (!key.trim()) return sendError(res, 400, 'key шаардлагатай')
+    const row = await upsertAppStorage(key, body.data ?? '')
+    return res.status(200).json({ ok: true, item: row })
+  }
+
+  if (req.method === 'POST') {
+    const body = parseJsonBody<{
+      items?: { storageKey?: string; key?: string; data?: string }[]
+    }>(req)
+    const items = (body.items ?? []).map((i) => ({
+      storageKey: i.storageKey ?? i.key ?? '',
+      data: i.data ?? '',
+    }))
+    const count = await upsertAppStorageBatch(items)
+    return res.status(200).json({ ok: true, count })
+  }
+
+  return sendError(res, 405, 'Method not allowed')
+}
+
+async function handleAppBlobs(req: VercelRequest, res: VercelResponse) {
+  applyCors(res, 'GET, PUT, DELETE, OPTIONS')
+  if (handleOptions(req, res)) return
+
+  const fullPath = getRoutePath(req)
+  const pathKey = fullPath.replace(/^app-blobs\/?/, '').trim()
+  const qKey = typeof req.query.key === 'string' ? req.query.key.trim() : ''
+  const blobKey = decodeURIComponent(pathKey || qKey || '')
+
+  if (req.method === 'GET' && !blobKey) {
+    const keys = await listAppBlobKeys()
+    return res.status(200).json({ ok: true, keys })
+  }
+
+  if (req.method === 'GET' && blobKey) {
+    const blob = await getAppBlob(blobKey)
+    if (!blob) return sendError(res, 404, 'Blob олдсонгүй')
+    return res.status(200).json({ ok: true, blob })
+  }
+
+  if (req.method === 'PUT') {
+    const body = parseJsonBody<{
+      blobKey?: string
+      key?: string
+      fileName?: string
+      mimeType?: string
+      base64?: string
+    }>(req)
+    const key = body.blobKey ?? body.key ?? ''
+    if (!key.trim() || !body.base64) {
+      return sendError(res, 400, 'key болон base64 шаардлагатай')
+    }
+    const blob = await upsertAppBlob({
+      blobKey: key,
+      fileName: body.fileName ?? 'file',
+      mimeType: body.mimeType,
+      base64: body.base64,
+    })
+    return res.status(200).json({ ok: true, blob })
+  }
+
+  if (req.method === 'DELETE' && blobKey) {
+    await deleteAppBlob(blobKey)
+    return res.status(200).json({ ok: true })
+  }
+
+  return sendError(res, 405, 'Method not allowed')
+}
+
 const ROUTES: Record<
   string,
   (req: VercelRequest, res: VercelResponse) => Promise<unknown>
@@ -398,6 +490,7 @@ const ROUTES: Record<
   'reset-portal-password': handleResetPortalPassword,
   'doctor-questions': handleDoctorQuestions,
   'clinical-exams': handleClinicalExams,
+  'app-storage': handleAppStorage,
 }
 
 export async function dispatchApiRoute(
@@ -405,6 +498,18 @@ export async function dispatchApiRoute(
   res: VercelResponse,
 ): Promise<void> {
   const path = getRoutePath(req)
+
+  if (path === 'app-blobs' || path.startsWith('app-blobs/')) {
+    try {
+      await handleAppBlobs(req, res)
+    } catch (error) {
+      console.error(`API /${path}:`, error)
+      const message = error instanceof Error ? error.message : 'Server error'
+      sendError(res, 500, message)
+    }
+    return
+  }
+
   const handler = ROUTES[path]
 
   if (!handler) {
